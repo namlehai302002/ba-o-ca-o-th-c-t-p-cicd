@@ -1,0 +1,152 @@
+@model WMS.ViewModels.StockCountEntryViewModel
+@{
+    ViewData["Title"] = "Ghi nhận kiểm kê";
+    var canEdit = Model.Status is WMS.Models.StockCountStatusEnum.Draft or WMS.Models.StockCountStatusEnum.Counting;
+    var showSystemQuantity = Model.CanViewExpectedQty;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ghi nhận kiểm kê</h1>
+        <p class="page-subtitle">@Model.SheetCode · @Model.WarehouseCode - @Model.WarehouseName · @Model.CountDate.ToString("dd/MM/yyyy")</p>
+    </div>
+    <a class="btn btn-outline" asp-controller="Reports" asp-action="StockCount" asp-route-warehouseId="@Model.WarehouseId" asp-route-countDate="@Model.CountDate.ToString("yyyy-MM-dd")">
+        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+    </a>
+</div>
+
+<div class="user-guide">
+    <div class="user-guide-title"><i class="fas fa-clipboard-check"></i> Trạng thái phiếu</div>
+    <div class="step-list">
+        <span class="step-chip"><i class="fas fa-warehouse"></i> Kho: @Model.WarehouseCode</span>
+        <span class="step-chip"><i class="fas fa-list-ol"></i> @Model.Lines.Count dòng</span>
+        @if (Model.IsBlindCount)
+        {
+            <span class="step-chip"><i class="fas fa-eye-slash"></i> Kiểm kê mù</span>
+        }
+        @if (canEdit)
+        {
+            <span class="step-chip"><i class="fas fa-pen-to-square"></i> Đang nhập số đếm</span>
+        }
+        else
+        {
+            <span class="step-chip"><i class="fas fa-user-check"></i> Đã gửi, chờ duyệt</span>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Notes))
+{
+    <div class="alert alert-info"><i class="fas fa-note-sticky"></i> @Model.Notes</div>
+}
+
+<form method="post" asp-controller="Reports" asp-action="StockCountSubmit">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="StockCountSheetId" />
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vị trí</th>
+                    <th>Mã vật tư</th>
+                    <th>Tên vật tư</th>
+                    <th>Lô</th>
+                    <th>Hạn dùng</th>
+                    <th class="cell-right">Số hệ thống</th>
+                    <th class="cell-right">Số đếm thực tế</th>
+                    <th class="cell-right">Chênh lệch</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Lines.Count == 0)
+                {
+                    <tr><td colspan="8" class="cell-empty cell-empty-md">Phiếu kiểm kê chưa có dòng hàng.</td></tr>
+                }
+                else
+                {
+                    for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        var line = Model.Lines[i];
+                        <tr>
+                            <td class="fw-700">@line.LocationCode</td>
+                            <td class="td-code">
+                                @line.ItemCode
+                                <input type="hidden" name="Lines[@i].StockCountLineId" value="@line.StockCountLineId" />
+                            </td>
+                            <td>@line.ItemName</td>
+                            <td>@(line.LotNumber ?? "-")</td>
+                            <td>@(line.ExpiryDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                            <td class="td-number">
+                                @(showSystemQuantity ? line.SystemQty.ToString("#,##0.####") : "***")
+                                @if (showSystemQuantity)
+                                {
+                                    <input type="hidden" class="system-qty" value="@line.SystemQty.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                                }
+                            </td>
+                            <td class="w-180">
+                                @if (canEdit)
+                                {
+                                    <input type="number" min="0" step="0.0001" class="form-control counted-input" name="Lines[@i].CountedQty" value="@(line.CountedQty?.ToString("0.####") ?? "")" placeholder="Nhập số đếm" required autofocus="@(i == 0)" />
+                                }
+                                else
+                                {
+                                    <span class="fw-700">@(line.CountedQty?.ToString("#,##0.####") ?? "Chưa nhập")</span>
+                                }
+                            </td>
+                            <td class="td-number diff-cell">
+                                @if (!showSystemQuantity)
+                                {
+                                    <span class="text-muted">Tính sau khi gửi</span>
+                                }
+                                else if (line.Variance.HasValue)
+                                {
+                                    <span class="@(line.Variance.Value == 0 ? "text-success" : "text-warning fw-700")">@line.Variance.Value.ToString("#,##0.####")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa nhập</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (canEdit && Model.Lines.Count > 0)
+    {
+        <div class="form-actions mt-3">
+            <a class="btn btn-outline" asp-controller="Reports" asp-action="StockCount" asp-route-warehouseId="@Model.WarehouseId" asp-route-countDate="@Model.CountDate.ToString("yyyy-MM-dd")">
+                <i class="fas fa-xmark"></i> Hủy
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i> Gửi kết quả kiểm kê
+            </button>
+        </div>
+    }
+</form>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.counted-input').forEach(input => {
+    input.addEventListener('input', function() {
+        const row = this.closest('tr');
+        const diffCell = row?.querySelector('.diff-cell');
+        if (!diffCell || @showSystemQuantity.ToString().ToLowerInvariant() === false) return;
+        const systemQty = Number.parseFloat(row.querySelector('.system-qty')?.value || '0');
+        const countedQty = Number.parseFloat(this.value);
+        if (Number.isNaN(countedQty)) {
+            diffCell.textContent = 'Chưa nhập';
+            return;
+        }
+        const variance = countedQty - systemQty;
+        diffCell.textContent = variance.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+        diffCell.classList.toggle('text-success', variance === 0);
+        diffCell.classList.toggle('text-warning', variance !== 0);
+        diffCell.classList.toggle('fw-700', variance !== 0);
+    });
+});
+</script>
+}

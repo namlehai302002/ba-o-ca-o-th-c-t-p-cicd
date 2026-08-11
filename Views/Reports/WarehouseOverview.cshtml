@@ -1,0 +1,300 @@
+@model WMS.ViewModels.WarehouseOverviewPageViewModel
+@{
+    ViewData["Title"] = "Tổng quan kho";
+
+    string Qty(decimal value) => value.ToString("#,##0.##");
+    string Count(int value) => value.ToString("N0");
+    string SeverityBadge(string severity) => severity switch
+    {
+        "danger" => "badge-danger",
+        "warning" => "badge-warning",
+        "success" => "badge-success",
+        _ => "badge-info"
+    };
+}
+
+<div class="warehouse-overview-report">
+    <div class="page-header warehouse-overview-header">
+        <div class="warehouse-overview-heading">
+            <h1 class="page-title">Tổng quan kho</h1>
+            <p class="page-subtitle">Bảng điều hành theo kỳ: tồn hiện tại, dòng hàng, việc tồn đọng và ngoại lệ dữ liệu trên cùng một màn hình.</p>
+        </div>
+        <div class="page-actions warehouse-overview-actions">
+            <a class="btn btn-secondary"
+               asp-controller="Reports"
+               asp-action="InventoryInOutSummary"
+               asp-route-dateFrom="@Model.DateFrom.ToString("yyyy-MM-dd")"
+               asp-route-dateTo="@Model.DateTo.ToString("yyyy-MM-dd")"
+               asp-route-warehouseId="@Model.WarehouseId">
+                <i class="fas fa-chart-column"></i> Nhập/xuất theo kỳ
+            </a>
+            <a class="btn btn-secondary" asp-controller="Reports" asp-action="StockValuation" asp-route-warehouseId="@Model.WarehouseId">
+                <i class="fas fa-coins"></i> Định giá tồn kho
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Notice))
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-circle-info"></i> @Model.Notice
+        </div>
+    }
+
+    <form method="get" class="filter-panel warehouse-overview-filter" aria-label="Bộ lọc tổng quan kho">
+        <div class="filter-field">
+            <label class="form-label" for="warehouseOverviewDateFrom">Từ ngày</label>
+            <input id="warehouseOverviewDateFrom" type="date" name="dateFrom" class="form-control" value="@Model.DateFrom.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="filter-field">
+            <label class="form-label" for="warehouseOverviewDateTo">Đến ngày</label>
+            <input id="warehouseOverviewDateTo" type="date" name="dateTo" class="form-control" value="@Model.DateTo.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="filter-field filter-field-wide">
+            <label class="form-label" for="warehouseOverviewWarehouse">Kho</label>
+            <select id="warehouseOverviewWarehouse" name="warehouseId" class="form-control">
+                <option value="">Tất cả kho</option>
+                @foreach (var warehouse in Model.Warehouses)
+                {
+                    <option value="@warehouse.WarehouseId" selected="@(Model.WarehouseId == warehouse.WarehouseId)">
+                        @warehouse.WarehouseCode - @warehouse.WarehouseName
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-action">
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Cập nhật</button>
+        </div>
+    </form>
+
+    <section class="metric-grid warehouse-overview-metrics @(Model.CanSeeFinancial ? "has-financial" : "without-financial")" aria-label="Chỉ số tổng quan kho">
+        <div class="metric-card accent warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Qty(Model.Kpi.OnHandQty)</div>
+                <div class="metric-label">Tồn hiện tại</div>
+            </div>
+        </div>
+        <div class="metric-card warning warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-lock"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Qty(Model.Kpi.ReservedQty)</div>
+                <div class="metric-label">Đã giữ chỗ hiện tại</div>
+            </div>
+        </div>
+        <div class="metric-card success warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-check"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Qty(Model.Kpi.AvailableQty)</div>
+                <div class="metric-label">Khả dụng hiện tại</div>
+            </div>
+        </div>
+        <div class="metric-card info warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-right-left"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Qty(Model.Kpi.NetMovementQty)</div>
+                <div class="metric-label">Chênh lệch nhập - xuất trong kỳ</div>
+            </div>
+        </div>
+        <div class="metric-card purple warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-list-check"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Count(Model.Kpi.OpenInboundVouchers + Model.Kpi.OpenOutboundVouchers)</div>
+                <div class="metric-label">Phiếu đang mở</div>
+            </div>
+        </div>
+        <div class="metric-card warehouse-overview-metric-card @(Model.HasExceptions ? "danger" : "success")">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-triangle-exclamation"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Count(Model.Exceptions.Sum(x => x.Count))</div>
+                <div class="metric-label">Ngoại lệ dữ liệu</div>
+            </div>
+        </div>
+        @if (Model.CanSeeFinancial)
+        {
+            <div class="metric-card success warehouse-overview-metric-card warehouse-overview-financial-kpi">
+                <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-coins"></i></span>
+                <div class="warehouse-overview-kpi-copy">
+                    <div class="metric-value">@Model.Kpi.TotalStockValue.ToString("N0")</div>
+                    <div class="metric-label">Giá trị tồn</div>
+                </div>
+            </div>
+        }
+        <div class="metric-card warning warehouse-overview-metric-card">
+            <span class="warehouse-overview-kpi-icon" aria-hidden="true"><i class="fas fa-hourglass-half"></i></span>
+            <div class="warehouse-overview-kpi-copy">
+                <div class="metric-value">@Count(Model.Kpi.ExpiringLotCount)</div>
+                <div class="metric-label">Lô sắp hết hạn</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="warehouse-overview-grid warehouse-overview-grid-primary">
+        <section class="warehouse-overview-panel">
+            <header class="warehouse-overview-panel-header">
+                <h2><i class="fas fa-warehouse" aria-hidden="true"></i> Tình hình theo kho</h2>
+                <span class="warehouse-overview-panel-meta">@Count(Model.WarehouseRows.Count) kho</span>
+            </header>
+            <div class="warehouse-overview-table-scroll" role="region" aria-label="Bảng tình hình theo kho" tabindex="0">
+            <table class="warehouse-overview-data-table warehouse-overview-data-table-warehouses">
+                <caption class="visually-hidden">Tồn, giữ chỗ, khả dụng và dòng hàng theo từng kho</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Kho</th>
+                        <th scope="col" class="cell-right">Tồn</th>
+                        <th scope="col" class="cell-right">Giữ chỗ</th>
+                        <th scope="col" class="cell-right">Khả dụng</th>
+                        <th scope="col" class="cell-right">Mã hàng</th>
+                        <th scope="col" class="cell-right">Vị trí</th>
+                        <th scope="col" class="cell-right">Phiếu mở</th>
+                        <th scope="col" class="cell-right">Nhập / Xuất kỳ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.WarehouseRows.Any())
+                    {
+                        <tr><td colspan="8" class="cell-empty cell-empty-lg">Không có kho phù hợp với phạm vi đã chọn.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.WarehouseRows)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-700">@row.WarehouseCode</div>
+                                    <div class="text-muted fs-sm">@row.WarehouseName</div>
+                                </td>
+                                <td class="td-number">@Qty(row.OnHandQty)</td>
+                                <td class="td-number text-warning">@Qty(row.ReservedQty)</td>
+                                <td class="td-number text-success">@Qty(row.AvailableQty)</td>
+                                <td class="td-number">@Count(row.ActiveItemCount)</td>
+                                <td class="td-number">@Count(row.ActiveLocationCount)</td>
+                                <td class="td-number">@Count(row.OpenInboundVouchers + row.OpenOutboundVouchers)</td>
+                                <td class="td-number">@Qty(row.InboundQty) / @Qty(row.OutboundQty)</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+            </div>
+        </section>
+
+        <section class="warehouse-overview-panel">
+            <header class="warehouse-overview-panel-header">
+                <h2><i class="fas fa-calendar-days" aria-hidden="true"></i> Dòng hàng theo ngày</h2>
+                <span class="warehouse-overview-panel-meta">@Count(Model.DailyFlow.Count) ngày</span>
+            </header>
+            <div class="warehouse-overview-table-scroll" role="region" aria-label="Bảng dòng hàng theo ngày" tabindex="0">
+            <table class="warehouse-overview-data-table warehouse-overview-data-table-daily">
+                <caption class="visually-hidden">Số lượng nhập, xuất và chênh lệch theo ngày</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Ngày</th>
+                        <th scope="col" class="cell-right">SL nhập</th>
+                        <th scope="col" class="cell-right">SL xuất</th>
+                        <th scope="col" class="cell-right">Chênh lệch</th>
+                        <th scope="col" class="cell-right">Dòng sổ kho</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.DailyFlow)
+                    {
+                        <tr>
+                            <td class="cell-nowrap">@row.Date.ToString("dd/MM/yyyy")</td>
+                            <td class="td-number text-success">@Qty(row.InboundQty)</td>
+                            <td class="td-number text-danger">@Qty(row.OutboundQty)</td>
+                            <td class="td-number fw-700">@Qty(row.NetQty)</td>
+                            <td class="td-number">@Count(row.TransactionCount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="warehouse-overview-grid warehouse-overview-grid-balanced">
+        <section class="warehouse-overview-panel">
+            <header class="warehouse-overview-panel-header">
+                <h2><i class="fas fa-ranking-star" aria-hidden="true"></i> Mã hàng phát sinh nhiều</h2>
+                <span class="warehouse-overview-panel-meta">@Count(Model.TopItems.Count) mã hàng</span>
+            </header>
+            <div class="warehouse-overview-table-scroll" role="region" aria-label="Bảng mã hàng phát sinh nhiều" tabindex="0">
+            <table class="warehouse-overview-data-table warehouse-overview-data-table-items">
+                <caption class="visually-hidden">Các mã hàng có nhiều giao dịch nhập hoặc xuất trong kỳ</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mã hàng</th>
+                        <th scope="col">Tên hàng</th>
+                        <th scope="col" class="cell-right">Nhập</th>
+                        <th scope="col" class="cell-right">Xuất</th>
+                        <th scope="col">ĐVT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.TopItems.Any())
+                    {
+                        <tr><td colspan="5" class="cell-empty cell-empty-lg">Chưa có giao dịch vật lý trong kỳ.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.TopItems)
+                        {
+                            <tr>
+                                <td><a class="td-code link-clean" asp-controller="Items" asp-action="Details" asp-route-id="@row.ItemId">@row.ItemCode</a></td>
+                                <td class="td-name">@row.ItemName</td>
+                                <td class="td-number text-success">@Qty(row.InboundQty)</td>
+                                <td class="td-number text-danger">@Qty(row.OutboundQty)</td>
+                                <td>@row.UomCode</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+            </div>
+        </section>
+
+        <section class="warehouse-overview-panel">
+            <header class="warehouse-overview-panel-header">
+                <h2><i class="fas fa-shield-halved" aria-hidden="true"></i> Kiểm soát dữ liệu</h2>
+                <span class="warehouse-overview-panel-meta">@Count(Model.Exceptions.Sum(x => x.Count)) phát hiện</span>
+            </header>
+            <div class="warehouse-overview-table-scroll" role="region" aria-label="Bảng kiểm soát dữ liệu" tabindex="0">
+            <table class="warehouse-overview-data-table warehouse-overview-data-table-exceptions">
+                <caption class="visually-hidden">Các kiểm tra chất lượng dữ liệu và đường dẫn xử lý</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Kiểm tra</th>
+                        <th scope="col" class="cell-right">Số dòng</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col"><span class="visually-hidden">Thao tác</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Exceptions)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-700">@row.Title</div>
+                                <div class="text-muted fs-sm">@row.Description</div>
+                            </td>
+                            <td class="td-number">@Count(row.Count)</td>
+                            <td><span class="badge @SeverityBadge(row.Severity)">@(string.IsNullOrWhiteSpace(row.StatusLabel) ? row.Title : row.StatusLabel)</span></td>
+                            <td class="cell-nowrap">
+                                <a class="btn btn-sm btn-ghost"
+                                   asp-controller="@row.ActionController"
+                                   asp-action="@row.ActionName"
+                                   asp-route-warehouseId="@Model.WarehouseId"
+                                   aria-label="Mở chi tiết: @row.Title"
+                                   title="Mở chi tiết: @row.Title">
+                                    <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        </section>
+    </div>
+</div>

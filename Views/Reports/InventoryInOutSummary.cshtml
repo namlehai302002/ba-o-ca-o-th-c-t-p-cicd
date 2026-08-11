@@ -1,0 +1,327 @@
+@model WMS.ViewModels.InventoryInOutSummaryPageViewModel
+@{
+    ViewData["Title"] = "Thống kê nhập/xuất theo kỳ";
+
+    string MovementLabel(string value) => value switch
+    {
+        "Inbound" => "Nhập",
+        "Outbound" => "Xuất",
+        "Transfer" => "Điều chuyển",
+        "Adjustment" => "Điều chỉnh",
+        _ => "Tất cả"
+    };
+
+    string DateOrDash(DateTime? value) => value.HasValue ? value.Value.ToString("dd/MM/yyyy") : "-";
+
+    string WarehouseShortName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        var separatorIndex = value.IndexOf(" - ", StringComparison.Ordinal);
+        return separatorIndex > 0 ? value[..separatorIndex] : value;
+    }
+
+    var hasRows = Model.Rows.Any();
+    var dateRangeError = ViewBag.DateRangeError as string;
+}
+
+<div class="inventory-flow-report">
+    <div class="page-header inventory-flow-header">
+        <div>
+            <h1 class="page-title">Thống kê nhập/xuất theo kỳ</h1>
+            <p class="page-subtitle">Tổng hợp vật tư đã nhập, xuất, điều chuyển hoặc điều chỉnh theo ngày, lô, HSD và vị trí.</p>
+        </div>
+        <div class="page-actions">
+            @if (string.IsNullOrWhiteSpace(dateRangeError))
+            {
+                <a class="btn btn-success"
+                   asp-controller="Reports"
+                   asp-action="ExportInventoryInOutSummary"
+                   asp-route-dateFrom="@Model.DateFrom.ToString("yyyy-MM-dd")"
+                   asp-route-dateTo="@Model.DateTo.ToString("yyyy-MM-dd")"
+                   asp-route-warehouseId="@Model.WarehouseId"
+                   asp-route-itemId="@Model.ItemId"
+                   asp-route-categoryId="@Model.CategoryId"
+                   asp-route-locationId="@Model.LocationId"
+                   asp-route-partnerId="@Model.PartnerId"
+                   asp-route-movementType="@Model.MovementType"
+                   asp-route-lotNumber="@Model.LotNumber">
+                    <i class="fas fa-file-excel"></i> Xuất Excel
+                </a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-success" disabled title="Chọn đủ khoảng ngày hợp lệ trước khi xuất Excel">
+                    <i class="fas fa-file-excel"></i> Xuất Excel
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(dateRangeError))
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-triangle-exclamation"></i> @dateRangeError
+        </div>
+    }
+
+    <form method="get" class="filter-panel inventory-flow-filter">
+        <div class="filter-field filter-field-date">
+            <label class="form-label">Từ ngày *</label>
+            <input type="date" name="dateFrom" class="form-control" value="@Model.DateFrom.ToString("yyyy-MM-dd")" required />
+        </div>
+        <div class="filter-field filter-field-date">
+            <label class="form-label">Đến ngày *</label>
+            <input type="date" name="dateTo" class="form-control" value="@Model.DateTo.ToString("yyyy-MM-dd")" required />
+        </div>
+        <div class="filter-field filter-field-wide">
+            <label class="form-label">Kho</label>
+            <select name="warehouseId" class="form-control">
+                <option value="">Tất cả kho</option>
+                @foreach (var warehouse in Model.Warehouses)
+                {
+                    <option value="@warehouse.WarehouseId" selected="@(Model.WarehouseId == warehouse.WarehouseId)">@warehouse.WarehouseCode - @warehouse.WarehouseName</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-wide">
+            <label class="form-label">Vật tư</label>
+            <select name="itemId" class="form-control">
+                <option value="">Tất cả vật tư</option>
+                @foreach (var item in Model.Items)
+                {
+                    <option value="@item.ItemId" selected="@(Model.ItemId == item.ItemId)">[@item.ItemCode] @item.ItemName</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-wide">
+            <label class="form-label">Danh mục</label>
+            <select name="categoryId" class="form-control">
+                <option value="">Tất cả danh mục</option>
+                @foreach (var category in Model.Categories)
+                {
+                    <option value="@category.CategoryId" selected="@(Model.CategoryId == category.CategoryId)">@category.CategoryName</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-date">
+            <label class="form-label">Loại giao dịch</label>
+            <select name="movementType" class="form-control">
+                @foreach (var option in new[] { "All", "Inbound", "Outbound", "Transfer", "Adjustment" })
+                {
+                    <option value="@option" selected="@(Model.MovementType == option)">@MovementLabel(option)</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-date">
+            <label class="form-label">Lô</label>
+            <input type="text" name="lotNumber" class="form-control" value="@Model.LotNumber" placeholder="VD: LOT-260701" />
+        </div>
+        <div class="filter-field filter-field-date">
+            <label class="form-label">Vị trí</label>
+            <select name="locationId" class="form-control">
+                <option value="">Tất cả vị trí</option>
+                @foreach (var location in Model.Locations)
+                {
+                    <option value="@location.LocationId" selected="@(Model.LocationId == location.LocationId)">@location.LocationCode</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-wide">
+            <label class="form-label">Đối tác/chủ hàng</label>
+            <select name="partnerId" class="form-control">
+                <option value="">Tất cả đối tác</option>
+                @foreach (var partner in Model.Partners)
+                {
+                    <option value="@partner.PartnerId" selected="@(Model.PartnerId == partner.PartnerId)">@partner.PartnerCode - @partner.PartnerName</option>
+                }
+            </select>
+        </div>
+        <div class="filter-field filter-field-action">
+            <label class="form-label">&nbsp;</label>
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Thống kê</button>
+        </div>
+    </form>
+
+    <div class="metric-grid inventory-flow-metrics">
+        <div class="metric-card inventory-flow-kpi success">
+            <span class="inventory-flow-kpi-icon"><i class="fas fa-arrow-down"></i></span>
+            <div>
+                <div class="metric-value">@Model.TotalInboundQty.ToString("#,##0.##")</div>
+                <div class="metric-label">Tổng SL nhập</div>
+            </div>
+        </div>
+        <div class="metric-card inventory-flow-kpi danger">
+            <span class="inventory-flow-kpi-icon"><i class="fas fa-arrow-up"></i></span>
+            <div>
+                <div class="metric-value">@Model.TotalOutboundQty.ToString("#,##0.##")</div>
+                <div class="metric-label">Tổng SL xuất</div>
+            </div>
+        </div>
+        <div class="metric-card inventory-flow-kpi info">
+            <span class="inventory-flow-kpi-icon"><i class="fas fa-scale-balanced"></i></span>
+            <div>
+                <div class="metric-value">@Model.NetQty.ToString("#,##0.##")</div>
+                <div class="metric-label">Chênh lệch nhập - xuất</div>
+            </div>
+        </div>
+        <div class="metric-card inventory-flow-kpi warning">
+            <span class="inventory-flow-kpi-icon"><i class="fas fa-barcode"></i></span>
+            <div>
+                <div class="metric-value">@Model.DistinctItemCount</div>
+                <div class="metric-label">Số mã phát sinh</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container inventory-flow-table-wrap">
+        <table class="inventory-flow-table">
+            <colgroup>
+                <col class="col-document-date" />
+                <col class="col-posting-date" />
+                <col class="col-voucher" />
+                <col class="col-type" />
+                <col class="col-partner" />
+                <col class="col-item-code" />
+                <col class="col-item-name" />
+                <col class="col-category" />
+                <col class="col-lot" />
+                <col class="col-date" />
+                <col class="col-date" />
+                <col class="col-date" />
+                <col class="col-warehouse" />
+                <col class="col-location" />
+                <col class="col-location" />
+                <col class="col-qty" />
+                <col class="col-qty" />
+                <col class="col-uom" />
+                <col class="col-user" />
+                <col class="col-user" />
+                <col class="col-notes" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Ngày chứng từ</th>
+                    <th>Ngày ghi sổ</th>
+                    <th>Mã phiếu</th>
+                    <th>Loại</th>
+                    <th>Đối tác</th>
+                    <th>Mã vật tư</th>
+                    <th>Tên vật tư</th>
+                    <th>Danh mục</th>
+                    <th>Lô</th>
+                    <th>NSX</th>
+                    <th>HSD</th>
+                    <th>Ngày nhập nguồn</th>
+                    <th>Kho</th>
+                    <th>Vị trí nguồn</th>
+                    <th>Vị trí đích</th>
+                    <th class="cell-right">SL nhập</th>
+                    <th class="cell-right">SL xuất</th>
+                    <th>ĐVT</th>
+                    <th>Người lập/thao tác</th>
+                    <th>Người duyệt/xác nhận</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!hasRows)
+                {
+                    <tr>
+                        <td colspan="21" class="cell-empty cell-empty-lg">Không có giao dịch phù hợp với điều kiện đã chọn.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td class="cell-nowrap">@DateOrDash(row.DocumentDate)</td>
+                            <td class="cell-nowrap">@row.TransactionAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="cell-code">
+                                @if (row.VoucherId.HasValue)
+                                {
+                                    <a asp-controller="Vouchers" asp-action="Details" asp-route-id="@row.VoucherId" class="td-code link-clean cell-clamp" title="@row.VoucherCode">@row.VoucherCode</a>
+                                }
+                                else
+                                {
+                                    <span class="td-code cell-clamp" title="@row.VoucherCode">@row.VoucherCode</span>
+                                }
+                            </td>
+                            <td class="cell-nowrap"><span class="badge @(row.OutboundQty > 0 ? "badge-danger" : row.InboundQty > 0 ? "badge-success" : "badge-secondary")">@row.MovementType</span></td>
+                            <td class="cell-muted"><span class="cell-clamp" title="@row.PartnerName">@(!string.IsNullOrWhiteSpace(row.PartnerName) ? row.PartnerName : "-")</span></td>
+                            <td class="td-code text-accent cell-code"><span class="cell-clamp" title="@row.ItemCode">@row.ItemCode</span></td>
+                            <td class="cell-strong"><span class="cell-clamp" title="@row.ItemName">@row.ItemName</span></td>
+                            <td class="cell-muted"><span class="cell-clamp" title="@row.CategoryName">@row.CategoryName</span></td>
+                            <td class="cell-code">@(!string.IsNullOrWhiteSpace(row.LotNumber) ? row.LotNumber : "-")</td>
+                            <td class="cell-nowrap">@DateOrDash(row.ManufacturingDate)</td>
+                            <td class="cell-nowrap">@DateOrDash(row.ExpiryDate)</td>
+                            <td class="cell-nowrap">@DateOrDash(row.SourceReceiveDate)</td>
+                            <td class="cell-warehouse" title="@row.WarehouseName">@WarehouseShortName(row.WarehouseName)</td>
+                            <td class="cell-code">@(!string.IsNullOrWhiteSpace(row.SourceLocationCode) ? row.SourceLocationCode : "-")</td>
+                            <td class="cell-code">@(!string.IsNullOrWhiteSpace(row.DestinationLocationCode) ? row.DestinationLocationCode : "-")</td>
+                            <td class="td-number text-success fw-700">@row.InboundQty.ToString("#,##0.##")</td>
+                            <td class="td-number text-danger fw-700">@row.OutboundQty.ToString("#,##0.##")</td>
+                            <td class="cell-nowrap">@row.UomCode</td>
+                            <td class="cell-muted"><span class="cell-clamp" title="@row.Actor">@(!string.IsNullOrWhiteSpace(row.Actor) ? row.Actor : "-")</span></td>
+                            <td class="cell-muted"><span class="cell-clamp" title="@row.Approver">@(!string.IsNullOrWhiteSpace(row.Approver) ? row.Approver : "-")</span></td>
+                            <td class="cell-muted"><span class="cell-clamp" title="@row.Notes">@(!string.IsNullOrWhiteSpace(row.Notes) ? row.Notes : "-")</span></td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (hasRows)
+    {
+        <section class="inventory-flow-breakdown">
+            <div class="enterprise-section-header">
+                <div>
+                    <h2 class="enterprise-section-title">Phân tích nhanh</h2>
+                </div>
+            </div>
+            <div class="inventory-flow-breakdown-grid">
+                <section class="inventory-flow-breakdown-panel">
+                    <h3>Tổng theo vật tư</h3>
+                    <div class="inventory-flow-summary-list">
+                        @foreach (var line in Model.TotalsByItem.Take(8))
+                        {
+                            <div class="inventory-flow-summary-line">
+                                <span title="@line.GroupName">@line.GroupName</span>
+                                <strong>Nhập @line.TotalInboundQty.ToString("#,##0.##") / Xuất @line.TotalOutboundQty.ToString("#,##0.##")</strong>
+                            </div>
+                        }
+                    </div>
+                </section>
+                <section class="inventory-flow-breakdown-panel">
+                    <h3>Tổng theo lô/HSD</h3>
+                    <div class="inventory-flow-summary-list">
+                        @foreach (var line in Model.TotalsByLot.Take(8))
+                        {
+                            <div class="inventory-flow-summary-line">
+                                <span title="@line.GroupName">@line.GroupName</span>
+                                <strong>Nhập @line.TotalInboundQty.ToString("#,##0.##") / Xuất @line.TotalOutboundQty.ToString("#,##0.##")</strong>
+                            </div>
+                        }
+                    </div>
+                </section>
+                <section class="inventory-flow-breakdown-panel">
+                    <h3>Tổng theo vị trí</h3>
+                    <div class="inventory-flow-summary-list">
+                        @foreach (var line in Model.TotalsByLocation.Take(8))
+                        {
+                            <div class="inventory-flow-summary-line">
+                                <span title="@line.GroupName">@line.GroupName</span>
+                                <strong>Nhập @line.TotalInboundQty.ToString("#,##0.##") / Xuất @line.TotalOutboundQty.ToString("#,##0.##")</strong>
+                            </div>
+                        }
+                    </div>
+                </section>
+            </div>
+        </section>
+    }
+</div>

@@ -1,0 +1,304 @@
+@model WMS.ViewModels.InventoryRiskRecommendationPageViewModel
+@using WMS.Models
+@using WMS.ViewModels
+@{
+    ViewData["Title"] = "Đề xuất kiểm kê";
+}
+
+<div class="page-header recommendation-header">
+    <div>
+        <h1 class="page-title">Đề xuất kiểm kê</h1>
+        <p class="page-subtitle">Quản lý xem xét phạm vi được xếp hạng trước khi tạo phiếu kiểm kê ẩn số hệ thống.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" asp-action="InventoryRisk"><i class="fas fa-chart-line"></i> Mở xếp hạng rủi ro</a>
+        <form asp-action="InventoryRiskGenerateRecommendations" method="post" class="recommendation-generate-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+            <input type="hidden" name="ownerPartnerId" value="@Model.OwnerPartnerId" />
+            <button class="btn btn-primary" type="submit" disabled="@(!Model.PersistenceAvailable)" title="Tạo danh sách từ lần chấm điểm đã lưu gần nhất">
+                <i class="fas fa-list-check"></i> Chuẩn bị đề xuất
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="recommendation-contract" role="status" data-testid="recommendation-contract">
+    <i class="fas fa-user-shield" aria-hidden="true"></i>
+    <div>
+        <strong>Quản lý quyết định, hệ thống chỉ hỗ trợ ưu tiên</strong>
+        <span>Duyệt đề xuất không làm thay đổi tồn kho. Chỉ khi kết quả kiểm kê được người có quyền duyệt thì quy trình điều chỉnh hiện hữu mới được thực hiện.</span>
+    </div>
+</div>
+
+@if (!Model.PersistenceAvailable)
+{
+    <div class="alert alert-warning" data-testid="recommendation-schema-warning">
+        <i class="fas fa-database"></i>
+        Chưa áp dụng schema AI-3 trên cơ sở dữ liệu đang kết nối. Màn hình chấm điểm chỉ đọc vẫn hoạt động; không có migration nào được tự động chạy.
+    </div>
+}
+
+<form method="get" class="filter-panel recommendation-filters" data-testid="recommendation-filters">
+    <div class="filter-field recommendation-search">
+        <label for="recommendation-search">Tìm kiếm</label>
+        <input id="recommendation-search" class="form-control" name="search" value="@Model.Search" placeholder="Mã, tên vật tư, vị trí hoặc chủ hàng" />
+    </div>
+    <div class="filter-field">
+        <label for="recommendation-warehouse">Kho</label>
+        <select id="recommendation-warehouse" class="form-control" name="warehouseId">
+            <option value="">Tất cả kho được phép</option>
+            @foreach (var warehouse in Model.Warehouses)
+            {
+                <option value="@warehouse.WarehouseId" selected="@(Model.WarehouseId == warehouse.WarehouseId)">@warehouse.WarehouseCode - @warehouse.WarehouseName</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="recommendation-owner">Chủ hàng</label>
+        <select id="recommendation-owner" class="form-control" name="ownerPartnerId">
+            <option value="">Tất cả phạm vi được phép</option>
+            @foreach (var owner in Model.Owners)
+            {
+                <option value="@owner.PartnerId" selected="@(Model.OwnerPartnerId == owner.PartnerId)">@owner.PartnerCode - @owner.PartnerName</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="recommendation-state">Trạng thái</label>
+        <select id="recommendation-state" class="form-control" name="state">
+            <option value="">Tất cả trạng thái</option>
+            @foreach (var value in Enum.GetValues<CycleCountRecommendationStateEnum>())
+            {
+                <option value="@value" selected="@(Model.State == value)">@InventoryRiskUiLabels.RecommendationState(value)</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field recommendation-page-size">
+        <label for="recommendation-page-size">Số dòng</label>
+        <select id="recommendation-page-size" class="form-control" name="pageSize">
+            @foreach (var size in new[] { 10, 25, 50, 100 })
+            {
+                <option value="@size" selected="@(Model.PageSize == size)">@size</option>
+            }
+        </select>
+    </div>
+    <button class="btn btn-primary" type="submit"><i class="fas fa-filter"></i> Áp dụng</button>
+</form>
+
+<div class="metric-grid recommendation-metrics" data-testid="recommendation-metrics">
+    <div class="metric-card warning">
+        <div class="metric-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div><div class="metric-value">@Model.PendingReviewCount</div><div class="metric-label">CHỜ XEM XÉT</div></div>
+    </div>
+    <div class="metric-card success">
+        <div class="metric-icon"><i class="fas fa-user-check"></i></div>
+        <div><div class="metric-value">@Model.ApprovedCount</div><div class="metric-label">ĐÃ DUYỆT, CHƯA TẠO PHIẾU</div></div>
+    </div>
+    <div class="metric-card info">
+        <div class="metric-icon"><i class="fas fa-clipboard-check"></i></div>
+        <div><div class="metric-value">@Model.InProgressCount</div><div class="metric-label">ĐANG TRONG QUY TRÌNH KIỂM KÊ</div></div>
+    </div>
+    <div class="metric-card danger">
+        <div class="metric-icon"><i class="fas fa-triangle-exclamation"></i></div>
+        <div><div class="metric-value">@Model.BlockedCount</div><div class="metric-label">HẾT HẠN HOẶC CẦN XỬ LÝ</div></div>
+    </div>
+</div>
+
+<section class="enterprise-section recommendation-results" data-testid="recommendation-results">
+    <div class="recommendation-section-heading">
+        <div>
+            <h2>Danh sách cần quyết định</h2>
+            <p>@Model.TotalCount đề xuất phù hợp bộ lọc. Mỗi quyết định đều lưu người thực hiện, thời điểm, lý do và trạng thái trước/sau.</p>
+        </div>
+    </div>
+    <div class="table-responsive recommendation-table-wrap" role="region" aria-label="Bảng đề xuất kiểm kê cần quyết định" tabindex="0">
+        <table class="data-table recommendation-table">
+            <caption class="visually-hidden">Danh sách đề xuất kiểm kê chờ quản lý xem xét và quyết định</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Phạm vi kiểm kê</th>
+                    <th scope="col">Điểm và lý do</th>
+                    <th scope="col">Trạng thái</th>
+                    <th scope="col">Phân công</th>
+                    <th scope="col">Quyết định / phiếu</th>
+                    <th scope="col">Lịch sử</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr class="recommendation-empty-row"><td colspan="6" class="empty-state">Chưa có đề xuất phù hợp. Hãy lưu một lần chấm điểm thử nghiệm rồi chọn “Chuẩn bị đề xuất”.</td></tr>
+                }
+                @foreach (var row in Model.Rows)
+                {
+                    <tr data-testid="recommendation-row" data-recommendation-id="@row.RecommendationId">
+                        <td data-label="Phạm vi kiểm kê">
+                            <strong class="recommendation-code">@row.ItemCode</strong>
+                            <div>@row.ItemName</div>
+                            <div class="recommendation-scope">@row.WarehouseCode / @row.LocationCode</div>
+                            <div class="text-muted">@row.OwnerName</div>
+                            <div class="recommendation-lot">
+                                <span>Lô: @(string.IsNullOrWhiteSpace(row.LotNumber) ? "Không quản lý" : row.LotNumber)</span>
+                                <span>HSD: @(row.ExpiryDate.HasValue ? row.ExpiryDate.Value.ToString("dd/MM/yyyy") : "Không quản lý")</span>
+                                <span>Tồn tại lúc chấm: @row.SnapshotSystemQty.ToString("N4")</span>
+                            </div>
+                        </td>
+                        <td data-label="Điểm và lý do">
+                            @if (row.PriorityScore.HasValue)
+                            {
+                                <strong class="recommendation-score">@row.PriorityScore.Value.ToString("N1")<small>/100</small></strong>
+                            }
+                            else
+                            {
+                                <span class="status-badge badge-danger">Chưa chấm được điểm</span>
+                            }
+                            <div>@row.ReasonSummary</div>
+                            <div class="text-muted">Quy tắc @row.ModelVersion</div>
+                            <div class="text-muted">Hiệu lực đến @row.FreshUntil.ToString("dd/MM/yyyy HH:mm")</div>
+                        </td>
+                        <td data-label="Trạng thái">
+                            <span class="status-badge @InventoryRiskUiLabels.RecommendationStateClass(row.State)">@InventoryRiskUiLabels.RecommendationState(row.State)</span>
+                            @if (!string.IsNullOrWhiteSpace(row.DecisionReasonCode))
+                            {
+                                <div class="recommendation-decision-reason">@InventoryRiskUiLabels.RecommendationReason(row.DecisionReasonCode)</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(row.DecisionNote))
+                            {
+                                <div class="text-muted">@row.DecisionNote</div>
+                            }
+                        </td>
+                        <td data-label="Phân công">
+                            <div><strong>@row.EstimatedEffortMinutes phút</strong> dự kiến</div>
+                            <div>@(string.IsNullOrWhiteSpace(row.AssignedTo) ? "Chưa giao người thực hiện" : row.AssignedTo)</div>
+                            <div class="text-muted">@(string.IsNullOrWhiteSpace(row.WorkPool) ? "Chưa chọn nhóm công việc" : row.WorkPool)</div>
+                            <span class="status-badge badge-info">Ẩn số hệ thống khi đếm</span>
+                        </td>
+                        <td class="recommendation-actions" data-label="Quyết định / phiếu">
+                            @if (row.State == CycleCountRecommendationStateEnum.PendingReview)
+                            {
+                                <form asp-action="InventoryRiskRecommendationDecision" method="post" class="recommendation-decision-form" data-testid="recommendation-decision-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="RecommendationId" value="@row.RecommendationId" />
+                                    <input type="hidden" name="ConcurrencyToken" value="@row.ConcurrencyToken" />
+                                    <label class="sr-only" for="action-@row.RecommendationId">Quyết định</label>
+                                    <select id="action-@row.RecommendationId" class="form-control recommendation-action-select" name="Action" data-recommendation="@row.RecommendationId" required>
+                                        <option value="APPROVE">Duyệt đề xuất</option>
+                                        <option value="MODIFY">Duyệt và điều chỉnh</option>
+                                        <option value="REJECT">Từ chối</option>
+                                    </select>
+                                    <label class="sr-only" for="reason-@row.RecommendationId">Lý do</label>
+                                    <select id="reason-@row.RecommendationId" class="form-control recommendation-reason-select" name="ReasonCode" data-recommendation="@row.RecommendationId" required>
+                                        <option value="RISK_CONFIRMED" data-action="APPROVE">Rủi ro cần được kiểm tra</option>
+                                        <option value="ROUTINE_CONTROL" data-action="APPROVE">Kiểm soát định kỳ</option>
+                                        <option value="MANAGER_JUDGMENT" data-action="APPROVE">Đánh giá của quản lý</option>
+                                        <option value="WORKLOAD_ADJUSTMENT" data-action="MODIFY">Điều chỉnh khối lượng công việc</option>
+                                        <option value="SCOPE_PRIORITY_CHANGED" data-action="MODIFY">Thay đổi mức ưu tiên</option>
+                                        <option value="ASSIGNMENT_CHANGED" data-action="MODIFY">Thay đổi phân công</option>
+                                        <option value="DUPLICATE_SCOPE" data-action="REJECT">Phạm vi đã có kế hoạch</option>
+                                        <option value="RECENTLY_COUNTED" data-action="REJECT">Vừa được kiểm kê gần đây</option>
+                                        <option value="LOW_BUSINESS_PRIORITY" data-action="REJECT">Ưu tiên nghiệp vụ thấp</option>
+                                        <option value="DATA_ISSUE" data-action="REJECT">Dữ liệu cần xử lý</option>
+                                        <option value="OTHER_REVIEWED" data-action="REJECT">Lý do khác đã xem xét</option>
+                                    </select>
+                                    <div class="recommendation-modify-fields" data-recommendation="@row.RecommendationId" hidden>
+                                        <label for="effort-@row.RecommendationId">Thời lượng dự kiến</label>
+                                        <input id="effort-@row.RecommendationId" class="form-control" type="number" min="1" max="480" name="EstimatedEffortMinutes" value="@row.EstimatedEffortMinutes" />
+                                        <label for="assignee-@row.RecommendationId">Người thực hiện</label>
+                                        <input id="assignee-@row.RecommendationId" class="form-control" name="AssignedTo" maxlength="100" placeholder="Tài khoản hoặc mã nhân viên" />
+                                        <label for="work-pool-@row.RecommendationId">Nhóm công việc</label>
+                                        <input id="work-pool-@row.RecommendationId" class="form-control" name="WorkPool" maxlength="80" placeholder="Ví dụ: Ca sáng - Khu A" />
+                                    </div>
+                                    <label class="sr-only" for="note-@row.RecommendationId">Ghi chú quyết định</label>
+                                    <textarea id="note-@row.RecommendationId" class="form-control" name="Note" maxlength="500" rows="2" placeholder="Ghi chú tùy chọn"></textarea>
+                                    <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-check"></i> Ghi nhận quyết định</button>
+                                </form>
+                            }
+                            else if (row.State is CycleCountRecommendationStateEnum.Approved or CycleCountRecommendationStateEnum.Modified)
+                            {
+                                <form asp-action="InventoryRiskCreateCountSheet" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="recommendationId" value="@row.RecommendationId" />
+                                    <input type="hidden" name="concurrencyToken" value="@row.ConcurrencyToken" />
+                                    <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-clipboard-check"></i> Tạo phiếu kiểm kê</button>
+                                </form>
+                            }
+                            else if (row.StockCountSheetId.HasValue)
+                            {
+                                <a class="btn btn-secondary btn-sm" asp-action="StockCountEntry" asp-route-id="@row.StockCountSheetId">
+                                    <i class="fas fa-arrow-up-right-from-square"></i> Mở @(row.StockCountSheetCode ?? "phiếu kiểm kê")
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Không có thao tác phù hợp ở trạng thái này.</span>
+                            }
+                        </td>
+                        <td data-label="Lịch sử">
+                            <details class="recommendation-history">
+                                <summary>@row.Decisions.Count quyết định</summary>
+                                @if (row.Decisions.Count == 0)
+                                {
+                                    <p class="text-muted">Chưa có lịch sử.</p>
+                                }
+                                else
+                                {
+                                    <ol>
+                                        @foreach (var decision in row.Decisions)
+                                        {
+                                            <li>
+                                                <strong>@InventoryRiskUiLabels.RecommendationDecision(decision.DecisionType)</strong>
+                                                <span>@InventoryRiskUiLabels.RecommendationReason(decision.ReasonCode)</span>
+                                                <small>@decision.Actor · @decision.DecidedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                            </li>
+                                        }
+                                    </ol>
+                                }
+                            </details>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="recommendation-pagination" aria-label="Phân trang đề xuất kiểm kê">
+            <a class="btn btn-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-action="InventoryRiskRecommendations"
+               asp-route-warehouseId="@Model.WarehouseId" asp-route-ownerPartnerId="@Model.OwnerPartnerId" asp-route-state="@Model.State"
+               asp-route-search="@Model.Search" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize">Trước</a>
+            <span>Trang <strong>@Model.Page</strong> / @Model.TotalPages</span>
+            <a class="btn btn-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-action="InventoryRiskRecommendations"
+               asp-route-warehouseId="@Model.WarehouseId" asp-route-ownerPartnerId="@Model.OwnerPartnerId" asp-route-state="@Model.State"
+               asp-route-search="@Model.Search" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Sau</a>
+        </nav>
+    }
+</section>
+
+<script>
+    (() => {
+        const syncDecisionForm = (actionSelect) => {
+            const id = actionSelect.dataset.recommendation;
+            const reasonSelect = document.querySelector(`.recommendation-reason-select[data-recommendation="${id}"]`);
+            const modifyFields = document.querySelector(`.recommendation-modify-fields[data-recommendation="${id}"]`);
+            if (!reasonSelect || !modifyFields) return;
+
+            const action = actionSelect.value;
+            let firstVisible = null;
+            Array.from(reasonSelect.options).forEach(option => {
+                const visible = option.dataset.action === action;
+                option.hidden = !visible;
+                option.disabled = !visible;
+                if (visible && !firstVisible) firstVisible = option;
+            });
+            if (firstVisible) reasonSelect.value = firstVisible.value;
+            modifyFields.hidden = action !== "MODIFY";
+        };
+
+        document.querySelectorAll(".recommendation-action-select").forEach(select => {
+            syncDecisionForm(select);
+            select.addEventListener("change", () => syncDecisionForm(select));
+        });
+    })();
+</script>

@@ -1,0 +1,286 @@
+@model WMS.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Trang chính";
+    var canSeeFinancial = (bool)(ViewBag.CanSeeFinancial ?? false);
+    var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var canOperate = WmsRoles.IsWarehouseOperator(currentRole);
+    var isManagerOrAdmin = WmsRoles.IsAdminOrManager(currentRole);
+    var canInbound = WmsRoles.IsInbound(currentRole);
+    var canOutbound = WmsRoles.IsOutbound(currentRole);
+    var canInventory = WmsRoles.IsInventory(currentRole);
+    var canTransport = WmsRoles.IsTransport(currentRole);
+    var canSeeReports = WmsRoles.IsReportViewer(currentRole);
+    var canSeeOperationalReports = isManagerOrAdmin || WmsRoles.IsReportingSpecialist(currentRole);
+    var inboundApprovalWork = isManagerOrAdmin ? Model.PendingInboundApprovals : 0;
+    var pickWork = canOutbound ? Model.OpenPickTasks + Model.ShortPickTasks : 0;
+    var stalePickWork = canOutbound ? Model.StalePickTasks : 0;
+    var movementWork = canInventory ? Model.OpenMovementTasks : 0;
+    var deliveryWork = canTransport ? Model.OverdueVouchers : 0;
+    var pendingWork = pickWork + movementWork + inboundApprovalWork;
+    var urgentWork = stalePickWork + deliveryWork;
+    var actionableWork = pendingWork + deliveryWork;
+    var roleWorkspace = ViewBag.RoleWorkspace as WMS.ViewModels.RoleWorkspaceViewModel;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Trang chính</h1>
+        <p class="page-subtitle">Bảng điều hành giúp nhân viên kho đi thẳng vào việc cần làm, theo dõi tồn kho và xử lý cảnh báo vận hành trong cùng một nơi.</p>
+    </div>
+    @if (canOperate)
+    {
+        <div class="page-actions">
+            @if (canInbound)
+            {
+                <a asp-controller="Vouchers" asp-action="Create" asp-route-type="1" class="btn btn-primary"><i class="fas fa-plus"></i> Tạo phiếu nhập</a>
+            }
+            @if (canOutbound)
+            {
+                <a asp-controller="Vouchers" asp-action="Create" asp-route-type="2" class="btn btn-secondary"><i class="fas fa-minus"></i> Tạo phiếu xuất</a>
+            }
+            @if (canOutbound || canInventory)
+            {
+                <a asp-controller="Operations" asp-action="NextTask" class="btn btn-outline-primary"><i class="fas fa-forward"></i> Nhiệm vụ tiếp theo</a>
+            }
+        </div>
+    }
+</div>
+
+<partial name="_CommandCenter" model="Model.CommandCenter" />
+
+@if (roleWorkspace != null)
+{
+    <section class="enterprise-section role-workspace-panel" data-role-workspace="@roleWorkspace.RoleKey">
+        <div class="enterprise-section-header">
+            <div>
+                <div class="enterprise-section-title">@roleWorkspace.Title</div>
+                <div class="enterprise-section-subtitle">@roleWorkspace.Description</div>
+            </div>
+            <span class="badge badge-accent">@roleWorkspace.RoleLabel</span>
+        </div>
+        <div class="role-workspace-actions">
+            @foreach (var action in roleWorkspace.QuickActions)
+            {
+                <a class="btn btn-@action.Variant" href="@action.Url"><i class="fas @action.Icon"></i> @action.Label</a>
+            }
+        </div>
+    </section>
+}
+
+<section class="enterprise-section">
+    <div class="enterprise-section-header">
+        <div>
+            <div class="enterprise-section-title">Bàn làm việc nhanh</div>
+            <div class="enterprise-section-subtitle">Các lối vào chính được nhóm theo nghiệp vụ để không phải kéo menu dài.</div>
+        </div>
+        <span class="badge badge-accent">Chuẩn hóa theo ca vận hành</span>
+    </div>
+    <div class="app-springboard">
+        @if (canInbound)
+        {
+            <a class="springboard-card" asp-controller="Operations" asp-action="Receiving">
+            <span class="springboard-icon"><i class="fas fa-truck-loading"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Nhập kho</span>
+                <span class="springboard-desc">Tiếp nhận hàng, kiểm phẩm, nhận số sê-ri và cất hàng theo vị trí.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Mở khu nhập kho</span>
+            </span>
+        </a>
+        }
+        @if (canOutbound)
+        {
+        <a class="springboard-card" asp-controller="Operations" asp-action="PickTasks">
+            <span class="springboard-icon"><i class="fas fa-list-check"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Xuất kho</span>
+                <span class="springboard-desc">Giữ chỗ, lấy hàng, đóng gói, giao hàng và theo dõi nhiệm vụ lấy hàng.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Mở khu xuất kho</span>
+            </span>
+        </a>
+        }
+        @if (canInventory || WmsRoles.IsViewerOnly(currentRole))
+        {
+        <a class="springboard-card" asp-controller="Reports" asp-action="Inventory">
+            <span class="springboard-icon"><i class="fas fa-boxes-stacked"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Tồn kho</span>
+                <span class="springboard-desc">Xem số lượng, vị trí, mã kiện, số sê-ri và sổ giao dịch tồn kho.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Kiểm tra tồn</span>
+            </span>
+        </a>
+        }
+        @if (canTransport)
+        {
+        <a class="springboard-card" asp-controller="Operations" asp-action="ShippingDispatch">
+            <span class="springboard-icon"><i class="fas fa-route"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Vận chuyển</span>
+                <span class="springboard-desc">Điều phối vận đơn, chuyến xe, chứng từ bàn giao, đối soát giao hàng và bộ kết nối vận tải.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Điều phối giao hàng</span>
+            </span>
+            </a>
+        }
+        @if (canSeeOperationalReports)
+        {
+            <a class="springboard-card" asp-controller="Reports" asp-action="OpsKpi">
+            <span class="springboard-icon"><i class="fas fa-chart-line"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Báo cáo</span>
+                <span class="springboard-desc">Theo dõi chỉ số vận hành, cảnh báo, kiểm kê và hiệu suất kho.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Xem báo cáo</span>
+            </span>
+            </a>
+        }
+        else if (canSeeReports)
+        {
+            <a class="springboard-card" asp-controller="Reports" asp-action="Inventory" asp-route-nav="report">
+            <span class="springboard-icon"><i class="fas fa-chart-line"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Báo cáo</span>
+                <span class="springboard-desc">Xem báo cáo tồn kho theo phạm vi được phân quyền.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Xem báo cáo tồn</span>
+            </span>
+            </a>
+        }
+        @if (isManagerOrAdmin)
+        {
+            <a class="springboard-card" asp-controller="Warehouses" asp-action="Index">
+            <span class="springboard-icon"><i class="fas fa-sliders"></i></span>
+            <span class="springboard-content">
+                <span class="springboard-title">Cấu hình</span>
+                <span class="springboard-desc">Quản lý kho, đối tác, danh mục vật tư, đơn vị tính và quy tắc vận hành.</span>
+                <span class="springboard-meta"><i class="fas fa-arrow-right"></i> Mở cấu hình</span>
+            </span>
+            </a>
+        }
+    </div>
+</section>
+
+@if (canOperate)
+{
+    <section class="enterprise-section">
+        <div class="enterprise-section-header">
+            <div>
+                <div class="enterprise-section-title">Công việc cần xử lý</div>
+                <div class="enterprise-section-subtitle">Ưu tiên theo trạng thái chờ xử lý, quá hạn hoặc cần phân công.</div>
+            </div>
+            <span class="badge @(urgentWork > 0 ? "badge-danger" : pendingWork > 0 ? "badge-warning" : "badge-success")">
+                @actionableWork mục cần theo dõi
+            </span>
+        </div>
+        <div class="task-card-grid">
+            @if (actionableWork == 0)
+            {
+                <div class="empty-state">Không có việc cần xử lý ngay trong ca hiện tại.</div>
+            }
+            @if (isManagerOrAdmin && Model.PendingInboundApprovals > 0)
+            {
+                <a class="task-card" asp-controller="Operations" asp-action="InboundApprovals">
+                    <span class="task-card-icon"><i class="fas fa-clipboard-check"></i></span>
+                    <span class="task-card-content">
+                        <span class="task-card-title">Phiếu nhập chờ duyệt</span>
+                        <span class="task-card-desc">@Model.PendingInboundApprovals phiếu nhập cần quản lý kiểm tra trước khi tiếp nhận hàng.</span>
+                        <span class="task-card-meta"><i class="fas fa-user-check"></i> Mở hàng đợi duyệt</span>
+                    </span>
+                </a>
+            }
+            @if (canOutbound && Model.OpenPickTasks + Model.ShortPickTasks + Model.UnassignedPickTasks + Model.StalePickTasks > 0)
+            {
+                <a class="task-card" asp-controller="Operations" asp-action="RfPicking">
+                    <span class="task-card-icon"><i class="fas fa-hand-pointer"></i></span>
+                    <span class="task-card-content">
+                        <span class="task-card-title">Nhiệm vụ lấy hàng</span>
+                        <span class="task-card-desc">@Model.OpenPickTasks nhiệm vụ đang mở, @Model.UnassignedPickTasks chưa phân công, @Model.ShortPickTasks thiếu hàng, @Model.StalePickTasks quá hạn.</span>
+                        <span class="task-card-meta"><i class="fas fa-list-check"></i> Xử lý nhiệm vụ</span>
+                    </span>
+                </a>
+            }
+            @if (canInventory && Model.OpenMovementTasks > 0)
+            {
+                <a class="task-card" asp-controller="Operations" asp-action="RfMovement">
+                    <span class="task-card-icon"><i class="fas fa-dolly"></i></span>
+                    <span class="task-card-content">
+                        <span class="task-card-title">Di chuyển tồn kho</span>
+                        <span class="task-card-desc">@Model.OpenMovementTasks nhiệm vụ di chuyển/bổ sung/tối ưu vị trí đang cần xử lý.</span>
+                        <span class="task-card-meta"><i class="fas fa-arrows-left-right"></i> Mở màn di chuyển</span>
+                    </span>
+                </a>
+            }
+            @if (canTransport && Model.OverdueVouchers > 0)
+            {
+                <a class="task-card" asp-controller="Operations" asp-action="ShipmentLoads">
+                    <span class="task-card-icon"><i class="fas fa-truck-ramp-box"></i></span>
+                    <span class="task-card-content">
+                        <span class="task-card-title">Phiếu giao trễ hạn</span>
+                        <span class="task-card-desc">@Model.OverdueVouchers phiếu giao trễ hạn cần kiểm tra trước khi bàn giao.</span>
+                        <span class="task-card-meta"><i class="fas fa-truck-fast"></i> Mở chuyến xe</span>
+                    </span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<section class="enterprise-section">
+    <div class="enterprise-section-header">
+        <div>
+            <div class="enterprise-section-title">Chỉ số vận hành</div>
+            <div class="enterprise-section-subtitle">Các chỉ số chính để quản lý ca làm việc và phát hiện rủi ro nhanh.</div>
+        </div>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card accent">
+            <div class="stat-icon"><i class="fas fa-boxes-stacked"></i></div>
+            <div class="stat-value">@Model.TotalItems</div>
+            <div class="stat-label">Tổng số vật tư</div>
+        </div>
+        @if (canSeeFinancial)
+        {
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                <div class="stat-value">@Model.TotalStockValue.ToString("N0")</div>
+                <div class="stat-label">Tổng giá trị tồn kho</div>
+            </div>
+        }
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-value">@Model.LowStockCount</div>
+            <div class="stat-label">Mã hàng sắp thiếu</div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-icon"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-value">@Model.TodayVouchers</div>
+            <div class="stat-label">Phiếu phát sinh hôm nay</div>
+        </div>
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="stat-value">@Model.OpenWaves</div>
+            <div class="stat-label">Đợt lấy hàng đang mở</div>
+        </div>
+        <div class="stat-card @(Model.ReservationFillRate >= 99 ? "success" : "warning")">
+            <div class="stat-icon"><i class="fas fa-percent"></i></div>
+            <div class="stat-value">@Model.ReservationFillRate.ToString("N1")%</div>
+            <div class="stat-label">Tỷ lệ đáp ứng giữ chỗ</div>
+        </div>
+    </div>
+</section>
+
+@if (isManagerOrAdmin && urgentWork > 0)
+{
+    <div class="alert alert-danger enterprise-section">
+        <i class="fas fa-triangle-exclamation"></i>
+        <div>
+            <strong>Cảnh báo vận hành cần chú ý.</strong>
+            @if (Model.StalePickTasks > 0) { <span>Có <b>@Model.StalePickTasks</b> nhiệm vụ lấy hàng quá hạn. </span> }
+            @if (Model.OverdueVouchers > 0) { <span>Có <b>@Model.OverdueVouchers</b> phiếu xuất trễ hạn giao. </span> }
+            @if (Model.StalePickTasks > 0)
+            {
+                <a asp-controller="Operations" asp-action="PickTasks">Mở nhiệm vụ lấy hàng</a>
+            }
+            @if (Model.OverdueVouchers > 0)
+            {
+                <a asp-controller="Operations" asp-action="ShipmentLoads">Mở chuyến xe</a>
+            }
+        </div>
+    </div>
+}

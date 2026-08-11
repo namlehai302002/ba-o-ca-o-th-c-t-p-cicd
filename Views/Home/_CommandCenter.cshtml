@@ -1,0 +1,242 @@
+@model WMS.ViewModels.DashboardCommandCenterViewModel
+@{
+    var warehouseFilterLocked = (bool)(ViewBag.WarehouseFilterLocked ?? false);
+
+    string FormatNumber(decimal value)
+        => value == decimal.Truncate(value) ? value.ToString("N0") : value.ToString("N2");
+
+    string FormatDeadline(DateTime? deadline)
+    {
+        if (!deadline.HasValue)
+            return "Chưa đặt hạn";
+
+        var difference = deadline.Value - Model.AsOfAt;
+        if (difference.TotalMinutes < 0)
+        {
+            var overdue = difference.Duration();
+            return overdue.TotalHours >= 24
+                ? $"Trễ {Math.Floor(overdue.TotalDays):N0} ngày"
+                : $"Trễ {Math.Max(1, Math.Ceiling(overdue.TotalHours)):N0} giờ";
+        }
+
+        return difference.TotalHours >= 24
+            ? $"Còn {Math.Floor(difference.TotalDays):N0} ngày"
+            : $"Còn {Math.Max(1, Math.Ceiling(difference.TotalHours)):N0} giờ";
+    }
+}
+
+<section class="command-center" aria-labelledby="command-center-title" data-dashboard-command-center>
+    <header class="command-center-header">
+        <div>
+            <div class="command-center-eyebrow">Điều hành trong ngày</div>
+            <h2 id="command-center-title">Việc cần làm hôm nay</h2>
+            <div class="command-center-context" aria-label="Phạm vi dữ liệu hiện tại">
+                <span><i class="fas fa-warehouse" aria-hidden="true"></i> @Model.WarehouseScopeLabel</span>
+                <span><i class="fas fa-handshake" aria-hidden="true"></i> @Model.OwnerScopeLabel</span>
+                <span><i class="fas fa-calendar-day" aria-hidden="true"></i> @Model.BusinessDate.ToString("dd/MM/yyyy")</span>
+                <span><i class="fas fa-clock" aria-hidden="true"></i> @Model.ShiftLabel · @Model.TimeZoneLabel</span>
+            </div>
+        </div>
+        <div class="command-center-updated">
+            <span>Cập nhật lúc <time datetime="@Model.AsOfAt.ToString("O")">@Model.AsOfAt.ToString("HH:mm:ss")</time></span>
+            <a class="btn btn-outline-primary btn-sm" href="@Context.Request.Path@Context.Request.QueryString" aria-label="Cập nhật dữ liệu bảng điều hành">
+                <i class="fas fa-rotate" aria-hidden="true"></i> Cập nhật
+            </a>
+        </div>
+    </header>
+
+    @if (Model.IsPartial)
+    {
+        <div class="command-center-data-state" role="status">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            <div>
+                <strong>Dữ liệu đang tải một phần.</strong>
+                <span>@string.Join(" ", Model.DataWarnings.Distinct()) Các nghiệp vụ khác vẫn có thể sử dụng bình thường.</span>
+            </div>
+        </div>
+    }
+
+    <form method="get" asp-controller="Home" asp-action="Index" class="command-center-filter" aria-label="Lọc việc cần làm">
+        @if (warehouseFilterLocked || Model.WarehouseOptions.Count <= 1)
+        {
+            @if (Model.SelectedWarehouseId.HasValue)
+            {
+                <input type="hidden" name="warehouseId" value="@Model.SelectedWarehouseId.Value" />
+            }
+        }
+        else
+        {
+            <label>
+                <span>Kho</span>
+                <select name="warehouseId">
+                    <option value="" selected="@(Model.SelectedWarehouseId.HasValue ? null : "selected")">Tất cả kho được phân quyền</option>
+                    @foreach (var option in Model.WarehouseOptions)
+                    {
+                        <option value="@option.Id" selected="@(Model.SelectedWarehouseId == option.Id ? "selected" : null)">@option.Label</option>
+                    }
+                </select>
+            </label>
+        }
+        <label>
+            <span>Mức ưu tiên</span>
+            <select name="severity">
+                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedSeverity) ? "selected" : null)">Tất cả mức</option>
+                <option value="critical" selected="@(Model.SelectedSeverity == "critical" ? "selected" : null)">Khẩn cấp</option>
+                <option value="high" selected="@(Model.SelectedSeverity == "high" ? "selected" : null)">Cao</option>
+                <option value="medium" selected="@(Model.SelectedSeverity == "medium" ? "selected" : null)">Trung bình</option>
+                <option value="low" selected="@(Model.SelectedSeverity == "low" ? "selected" : null)">Thấp</option>
+            </select>
+        </label>
+        <label>
+            <span>Trạng thái</span>
+            <select name="workState">
+                <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedWorkState) ? "selected" : null)">Tất cả trạng thái</option>
+                <option value="not-started" selected="@(Model.SelectedWorkState == "not-started" ? "selected" : null)">Chưa bắt đầu</option>
+                <option value="in-progress" selected="@(Model.SelectedWorkState == "in-progress" ? "selected" : null)">Đang xử lý</option>
+                <option value="waiting" selected="@(Model.SelectedWorkState == "waiting" ? "selected" : null)">Đang chờ</option>
+                <option value="blocked" selected="@(Model.SelectedWorkState == "blocked" ? "selected" : null)">Bị chặn</option>
+                <option value="overdue" selected="@(Model.SelectedWorkState == "overdue" ? "selected" : null)">Trễ hạn</option>
+            </select>
+        </label>
+        <label class="command-center-filter-assignee">
+            <span>Người phụ trách</span>
+            <input type="search" name="assignee" value="@Model.SelectedAssignee" placeholder="Tên hoặc tài khoản" autocomplete="off" />
+        </label>
+        <div class="command-center-filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter" aria-hidden="true"></i> Lọc</button>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary" aria-label="Xóa bộ lọc"><i class="fas fa-rotate-left" aria-hidden="true"></i></a>
+        </div>
+    </form>
+
+    <div class="command-center-kpis" aria-label="Tình trạng công việc">
+        <div class="command-center-kpi">
+            <span>Tổng việc mở</span>
+            <strong>@Model.TotalWorkItems</strong>
+        </div>
+        <div class="command-center-kpi">
+            <span>Chưa bắt đầu</span>
+            <strong>@Model.NotStartedCount</strong>
+        </div>
+        <div class="command-center-kpi info">
+            <span>Đang làm / chờ</span>
+            <strong>@(Model.InProgressCount + Model.WaitingCount)</strong>
+        </div>
+        <div class="command-center-kpi danger">
+            <span>Bị chặn</span>
+            <strong>@Model.BlockedCount</strong>
+        </div>
+        <div class="command-center-kpi warning">
+            <span>Trễ hạn</span>
+            <strong>@Model.OverdueCount</strong>
+        </div>
+        <div class="command-center-kpi success">
+            <span>Hoàn thành hôm nay</span>
+            <strong>@Model.CompletedTodayCount</strong>
+        </div>
+    </div>
+
+    <div class="command-center-queue-header">
+        <div>
+            <h3>Hàng đợi ưu tiên</h3>
+            <p>Sắp theo mức độ nghiêm trọng, hạn xử lý gần nhất và thời gian chờ.</p>
+        </div>
+        <div class="command-center-severity-summary" aria-label="Số việc theo mức ưu tiên">
+            <span class="severity-chip critical">@Model.CriticalCount khẩn cấp</span>
+            <span class="severity-chip high">@Model.HighCount cao</span>
+            <span class="severity-chip medium">@Model.MediumCount trung bình</span>
+        </div>
+    </div>
+
+    @if (Model.WorkItems.Count == 0)
+    {
+        <div class="command-center-empty">
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <div>
+                <strong>Hôm nay không còn việc phù hợp cần xử lý.</strong>
+                <span>Đã kiểm tra lúc @Model.AsOfAt.ToString("HH:mm:ss"). Hãy xóa bộ lọc nếu bạn muốn xem toàn bộ hàng đợi.</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="command-center-table-wrap" tabindex="0" aria-label="Bảng việc cần làm hôm nay">
+            <table class="command-center-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Ưu tiên</th>
+                        <th scope="col">Công việc</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Tiến độ</th>
+                        <th scope="col">Hạn xử lý</th>
+                        <th scope="col">Phụ trách</th>
+                        <th scope="col"><span class="sr-only">Thao tác</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.WorkItems)
+                    {
+                        <tr data-severity="@item.SeverityKey" data-state="@item.StateKey">
+                            <td data-label="Ưu tiên">
+                                <span class="severity-chip @item.SeverityKey">@item.SeverityLabel</span>
+                            </td>
+                            <td data-label="Công việc" class="command-center-work-main">
+                                <div class="command-center-work-kind">@item.KindLabel · @item.WarehouseLabel</div>
+                                <strong>@item.ReferenceCode</strong>
+                                <span>@item.Title</span>
+                                @if (!string.IsNullOrWhiteSpace(item.BlockerReason))
+                                {
+                                    <small><i class="fas fa-circle-exclamation" aria-hidden="true"></i> @item.BlockerReason</small>
+                                }
+                            </td>
+                            <td data-label="Trạng thái">
+                                <span class="work-state @item.StateKey">@item.StateLabel</span>
+                            </td>
+                            <td data-label="Tiến độ" class="command-center-progress-cell">
+                                <div class="command-center-progress-label">
+                                    <span>@FormatNumber(item.ProgressDone) / @FormatNumber(item.ProgressTotal)</span>
+                                    <small>@item.ProgressUnit</small>
+                                </div>
+                                <progress class="command-center-progress"
+                                          value="@item.ProgressPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                          max="100"
+                                          aria-label="Tiến độ @item.ReferenceCode">@item.ProgressPercent.ToString("0")%</progress>
+                            </td>
+                            <td data-label="Hạn xử lý" class="command-center-deadline @(item.StateKey == "overdue" ? "overdue" : "")">
+                                <strong>@FormatDeadline(item.Deadline)</strong>
+                                @if (item.Deadline.HasValue)
+                                {
+                                    <time datetime="@item.Deadline.Value.ToString("O")">@item.Deadline.Value.ToString("dd/MM HH:mm")</time>
+                                }
+                            </td>
+                            <td data-label="Phụ trách">@item.Assignee</td>
+                            <td class="command-center-action-cell">
+                                <a href="@item.ActionUrl" class="btn btn-outline-primary btn-sm">
+                                    @item.ActionLabel <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.HiddenByLimitCount > 0)
+        {
+            <p class="command-center-limit-note">Còn @Model.HiddenByLimitCount việc khác. Dùng bộ lọc để thu hẹp hàng đợi.</p>
+        }
+    }
+
+    <div class="command-center-processes" aria-label="Tiến độ theo quy trình">
+        @foreach (var summary in Model.ProcessSummaries)
+        {
+            <a href="@summary.DrillDownUrl" class="command-center-process">
+                <span class="command-center-process-icon"><i class="fas @summary.Icon" aria-hidden="true"></i></span>
+                <span class="command-center-process-body">
+                    <span class="command-center-process-title">@summary.Label</span>
+                    <span>@summary.Open đang mở · @summary.Overdue trễ hạn</span>
+                    <small>@summary.CompletedToday hoàn thành / @summary.DueToday đến hạn hôm nay</small>
+                </span>
+                <span class="command-center-process-rate">@summary.CompletionRate.ToString("N1")%</span>
+            </a>
+        }
+    </div>
+</section>

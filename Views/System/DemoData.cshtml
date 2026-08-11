@@ -1,0 +1,207 @@
+@model WMS.ViewModels.DemoDataPageViewModel
+@{
+    ViewData["Title"] = "Demo dữ liệu";
+}
+
+<link rel="stylesheet" href="~/css/demo-data.css" asp-append-version="true" />
+
+<div class="page-header">
+    <div>
+        <h1>Demo dữ liệu</h1>
+        <p>Nạp nhanh dữ liệu mẫu theo từng bối cảnh kho nội bộ để trình bày nghiệp vụ WMS end-to-end.</p>
+    </div>
+</div>
+
+<div class="metric-grid mb-3">
+    <div class="metric-card">
+        <span class="metric-label">Kho hiện có</span>
+        <strong>@Model.WarehouseCount</strong>
+    </div>
+    <div class="metric-card">
+        <span class="metric-label">Vật tư hiện có</span>
+        <strong>@Model.ItemCount</strong>
+    </div>
+    <div class="metric-card">
+        <span class="metric-label">Phiếu kho hiện có</span>
+        <strong>@Model.VoucherCount</strong>
+    </div>
+    <div class="metric-card">
+        <span class="metric-label">Dòng tồn theo vị trí</span>
+        <strong>@Model.StockLocationCount</strong>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.LastAppliedMessage))
+{
+    <div class="alert alert-success mb-3">
+        <i class="fas fa-circle-check"></i>
+        @Model.LastAppliedMessage
+    </div>
+}
+
+<section class="enterprise-section mb-3">
+    <div class="section-header">
+        <div>
+            <h2>Phạm vi cleanup an toàn</h2>
+            <p>Áp dụng khi cần làm sạch dữ liệu demo cũ rồi nạp lại một bộ dữ liệu mới.</p>
+        </div>
+    </div>
+    <div class="demo-data-warning">
+        Khi bấm một bộ demo, hệ thống sẽ xóa dữ liệu nghiệp vụ và danh mục kho cũ như vật tư, danh mục, đơn vị tính, đối tác, kho/vị trí, tồn kho, phiếu, QC, kiểm kê, reservation, picking, báo cáo vận hành và audit nghiệp vụ.
+        Hệ thống không xóa tài khoản người dùng, mật khẩu/hash đăng nhập, vai trò, phân quyền, cấu hình xác thực, admin hiện tại, migration hoặc schema database.
+        Nếu quyền đăng nhập đang tham chiếu kho/vùng/đối tác, các bản ghi đó được giữ lại để tránh lỗi khóa ngoại và giữ khả năng đăng nhập.
+    </div>
+</section>
+
+<section class="enterprise-section">
+    <div class="section-header">
+        <div>
+            <h2>Chọn bối cảnh demo</h2>
+            <p>Mỗi lựa chọn chạy trong transaction. Nếu lỗi xảy ra, hệ thống hoàn tác toàn bộ dữ liệu đã nạp.</p>
+        </div>
+    </div>
+
+    <div class="demo-data-grid">
+        @foreach (var option in Model.Options)
+        {
+            <article class="demo-data-card">
+                <div class="demo-data-icon @option.AccentClass">
+                    <i class="@option.IconClass"></i>
+                </div>
+                <div>
+                    <h3>@option.Title</h3>
+                    <p>@option.Subtitle</p>
+                </div>
+                <ul class="demo-data-highlights">
+                    @foreach (var highlight in option.Highlights)
+                    {
+                        <li>@highlight</li>
+                    }
+                </ul>
+                <form asp-controller="System" asp-action="ApplyDemoData" method="post" class="demo-data-form mt-auto" data-no-submit-loading="true">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="domain" value="@option.Key" />
+                    <input type="hidden" name="confirmApply" value="APPLY_DEMO_DATA" />
+                    <button type="submit" class="btn btn-primary w-100" data-demo-title="@option.Title">
+                        <i class="fas fa-database"></i>
+                        @option.Title
+                    </button>
+                </form>
+            </article>
+        }
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function getDemoButtons() {
+            return Array.prototype.slice.call(document.querySelectorAll('.demo-data-form button[type="submit"]'));
+        }
+
+        function rememberDemoButton(button) {
+            if (!button.dataset.demoOriginalHtml) {
+                button.dataset.demoOriginalHtml = button.innerHTML;
+            }
+        }
+
+        function setDemoButtonsLoading(activeButton) {
+            getDemoButtons().forEach(function (button) {
+                rememberDemoButton(button);
+                button.disabled = true;
+                if (button === activeButton) {
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang nạp dữ liệu...';
+                }
+            });
+        }
+
+        function setDemoButtonLoading(button) {
+            if (!button) return;
+            setDemoButtonsLoading(button);
+        }
+
+        function resetDemoButtonsIdle() {
+            getDemoButtons().forEach(function (button) {
+                button.disabled = false;
+                if (button.dataset.demoOriginalHtml) {
+                    button.innerHTML = button.dataset.demoOriginalHtml;
+                }
+            });
+        }
+
+        function resetDemoButtonIdle(button) {
+            if (!button) return;
+            rememberDemoButton(button);
+            resetDemoButtonsIdle();
+        }
+
+        function notifyDemoConfirmFailure() {
+            if (window.enterpriseNotify) {
+                window.enterpriseNotify({
+                    title: 'Không thể xác nhận thao tác',
+                    text: 'Vui lòng thử lại thao tác nạp dữ liệu demo.',
+                    icon: 'error'
+                });
+            }
+        }
+
+        function resetDemoFormConfirmation(form) {
+            delete form.dataset.demoConfirmed;
+        }
+
+        function submitDemoForm(form, button) {
+            form.dataset.demoConfirmed = 'true';
+            setDemoButtonsLoading(button);
+            window.setTimeout(function () {
+                HTMLFormElement.prototype.submit.call(form);
+            }, 75);
+        }
+
+        function resolveDemoTitle(button) {
+            return button ? button.getAttribute('data-demo-title') : 'bộ demo đã chọn';
+        }
+
+        function buildConfirmMessage(title) {
+            return 'Thao tác này sẽ xóa dữ liệu nghiệp vụ/danh mục kho cũ và nạp ' + title + '. Tài khoản, mật khẩu, vai trò và phân quyền đăng nhập sẽ được giữ nguyên. Bạn có muốn tiếp tục?';
+        }
+
+        document.querySelectorAll('.demo-data-form').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                var button = form.querySelector('button[type="submit"]');
+                resetDemoButtonIdle(button);
+
+                if (form.dataset.demoConfirmed === 'true') {
+                    setDemoButtonLoading(button);
+                    return;
+                }
+
+                var title = resolveDemoTitle(button);
+                var message = buildConfirmMessage(title);
+
+                event.preventDefault();
+
+                var confirmTask = window.enterpriseConfirm
+                    ? window.enterpriseConfirm({
+                        title: 'Xác nhận nạp dữ liệu demo',
+                        text: message,
+                        icon: 'warning',
+                        confirmButtonText: 'Nạp dữ liệu',
+                        cancelButtonText: 'Hủy'
+                    })
+                    : Promise.resolve(false);
+
+                confirmTask.then(function (ok) {
+                    if (!ok) {
+                        resetDemoFormConfirmation(form);
+                        resetDemoButtonsIdle();
+                        return;
+                    }
+                    submitDemoForm(form, button);
+                }).catch(function () {
+                    resetDemoFormConfirmation(form);
+                    resetDemoButtonsIdle();
+                    notifyDemoConfirmFailure();
+                });
+            });
+        });
+    });
+</script>

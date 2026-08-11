@@ -1,0 +1,235 @@
+@model WMS.ViewModels.WorkflowProfilesViewModel
+@{
+    ViewData["Title"] = "Quy tắc vận hành kho";
+    var selectedScopeMode = Model.WorkflowScopeMode == "ThreePl" ? "ThreePl" : "Warehouse";
+    var hasThreePlOwners = Model.Owners.Any();
+    var workflowModuleOptions = new (string Key, string Label)[]
+    {
+        ("inbound", "Nhập kho"),
+        ("outbound", "Xuất kho"),
+        ("picking", "Lấy hàng"),
+        ("movement", "Di chuyển nội bộ"),
+        ("shipping", "Bàn giao vận chuyển"),
+        ("stockcount", "Kiểm kê tồn kho"),
+        ("quality", "Kiểm phẩm"),
+        ("packing", "Đóng gói")
+    };
+
+    string WorkflowModuleLabel(string? moduleKey)
+    {
+        var key = (moduleKey ?? "").Trim().ToLowerInvariant();
+        return key switch
+        {
+            "inbound" => "Nhập kho",
+            "receiving" => "Nhập kho",
+            "outbound" => "Xuất kho",
+            "picking" => "Lấy hàng",
+            "movement" => "Di chuyển nội bộ",
+            "shipping" => "Bàn giao vận chuyển",
+            "stockcount" => "Kiểm kê tồn kho",
+            "cyclecount" => "Kiểm kê tồn kho",
+            "quality" => "Kiểm phẩm",
+            "qc" => "Kiểm phẩm",
+            "packing" => "Đóng gói",
+            "" => "Chưa phân hệ",
+            _ => moduleKey ?? ""
+        };
+    }
+
+    string WorkflowProfileLabel(string? profileName)
+    {
+        var name = (profileName ?? "").Trim();
+        return name.ToLowerInvariant() switch
+        {
+            "inbound receive and qc" => "Nhập kho và kiểm phẩm",
+            "directed movement" => "Di chuyển có chỉ dẫn",
+            "outbound pick pack ship" => "Lấy hàng, đóng gói và xuất kho",
+            "carrier handover" => "Bàn giao đơn vận chuyển",
+            "cycle count and adjustment" => "Kiểm kê chu kỳ và điều chỉnh",
+            _ => name
+        };
+    }
+
+    string DisplayPartnerName(WMS.Models.Partner partner)
+    {
+        var threePlPrefix = "3PL ";
+        return partner.PartnerName
+            .Trim()
+            .Replace("Chủ hàng " + threePlPrefix, "", StringComparison.OrdinalIgnoreCase)
+            .Replace("Chu " + "hang " + threePlPrefix, "", StringComparison.OrdinalIgnoreCase)
+            .Replace("Chu ", "Chủ ", StringComparison.OrdinalIgnoreCase)
+            .Replace(" hang", " hàng", StringComparison.OrdinalIgnoreCase);
+    }
+
+    string WorkflowScopeLabel(WMS.Models.Partner? owner)
+    {
+        return owner == null ? "Toàn kho" : $"Khách hàng thuê kho: {owner.PartnerCode} - {DisplayPartnerName(owner)}";
+    }
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quy tắc vận hành kho</h1>
+        <p class="page-subtitle">Bật/tắt bước quét, kiểm phẩm, phê duyệt và đóng gói theo phạm vi vận hành.</p>
+    </div>
+</div>
+
+<form method="get" class="filter-panel">
+    <div>
+        <label for="workflowWarehouseFilter">Kho</label>
+        <select id="workflowWarehouseFilter" class="form-control" name="warehouseId">
+            <option value="">Tất cả kho</option>
+            @foreach (var wh in Model.Warehouses)
+            {
+                <option value="@wh.WarehouseId" selected="@(Model.WarehouseId == wh.WarehouseId)">@wh.WarehouseCode - @wh.WarehouseName</option>
+            }
+        </select>
+    </div>
+    <button class="btn btn-primary" type="submit"><i class="fas fa-filter"></i> Lọc</button>
+</form>
+
+<section class="enterprise-section">
+    <div class="enterprise-section-header">
+        <div>
+            <div class="enterprise-section-title">Thêm hoặc cập nhật quy tắc</div>
+            <div class="enterprise-section-subtitle">Phân hệ gợi ý: nhập kho, lấy hàng, di chuyển, đóng gói, kiểm phẩm.</div>
+        </div>
+    </div>
+    <form method="post" asp-action="SaveWorkflowProfile" class="enterprise-workbench">
+        @Html.AntiForgeryToken()
+        <div class="enterprise-form-card">
+            <h3>Phạm vi áp dụng</h3>
+            <div class="form-group">
+                <label class="form-label" for="workflowWarehouseId">Kho</label>
+                <select id="workflowWarehouseId" class="form-control" name="warehouseId" required>
+                    @foreach (var wh in Model.Warehouses)
+                    {
+                        <option value="@wh.WarehouseId" selected="@(Model.WarehouseId == wh.WarehouseId)">@wh.WarehouseCode - @wh.WarehouseName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phạm vi áp dụng</label>
+                @if (hasThreePlOwners)
+                {
+                    <div class="segmented-control workflow-scope-toggle" data-workflow-scope-toggle>
+                        <label class="segmented-option">
+                            <input type="radio" name="workflowScopeMode" value="Warehouse" checked="@(selectedScopeMode == "Warehouse")" />
+                            <span><i class="fas fa-warehouse"></i> Toàn kho</span>
+                        </label>
+                        <label class="segmented-option">
+                            <input type="radio" name="workflowScopeMode" value="ThreePl" checked="@(selectedScopeMode == "ThreePl")" />
+                            <span><i class="fas fa-layer-group"></i> Theo khách hàng thuê kho</span>
+                        </label>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="workflowScopeMode" value="Warehouse" />
+                    <div class="status-badge">Toàn kho</div>
+                }
+            </div>
+            <div class="form-group" id="workflowOwnerScopeField" hidden="@(!hasThreePlOwners || selectedScopeMode != "ThreePl")">
+                <label class="form-label" for="workflowOwnerPartnerId">Chủ hàng</label>
+                <select class="form-control" name="ownerPartnerId" id="workflowOwnerPartnerId" disabled="@(!hasThreePlOwners || selectedScopeMode != "ThreePl")">
+                    <option value="">-- Chọn chủ hàng --</option>
+                    @foreach (var owner in Model.Owners)
+                    {
+                        <option value="@owner.PartnerId">@owner.PartnerCode - @DisplayPartnerName(owner)</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="workflowModuleKey">Phân hệ nghiệp vụ</label>
+                <select id="workflowModuleKey" class="form-control" name="moduleKey" required>
+                    @foreach (var option in workflowModuleOptions)
+                    {
+                        <option value="@option.Key">@option.Label</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="workflowProfileName">Tên cấu hình</label>
+                <input id="workflowProfileName" class="form-control" name="profileName" placeholder="VD: Nhập kho chuẩn" required />
+            </div>
+        </div>
+        <div class="enterprise-form-card">
+            <h3>Bước nghiệp vụ bắt buộc</h3>
+            <div class="enterprise-choice-grid">
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireLocationScan" value="true" checked /> <span>Quét vị trí</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireItemScan" value="true" checked /> <span>Quét vật tư</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireToteScan" value="true" /> <span>Quét thùng lấy hàng</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireSerialScan" value="true" /> <span>Quét số sê-ri</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireQc" value="true" /> <span>Kiểm phẩm</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requireApproval" value="true" /> <span>Phê duyệt</span></label>
+                <label class="enterprise-choice-tile"><input type="checkbox" name="requirePacking" value="true" /> <span>Đóng gói</span></label>
+            </div>
+            <div class="enterprise-form-actions">
+                <button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> Lưu quy tắc</button>
+            </div>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+<script>
+    function syncWorkflowScopeMode() {
+        const selectedMode = document.querySelector('input[name="workflowScopeMode"]:checked')?.value || 'Warehouse';
+        const ownerField = document.getElementById('workflowOwnerScopeField');
+        const ownerSelect = document.getElementById('workflowOwnerPartnerId');
+        const isThreePl = selectedMode === 'ThreePl';
+
+        if (ownerField) {
+            ownerField.hidden = !isThreePl;
+            ownerField.style.display = isThreePl ? '' : 'none';
+        }
+
+        if (ownerSelect) {
+            ownerSelect.disabled = !isThreePl;
+            if (!isThreePl) {
+                ownerSelect.value = '';
+            }
+        }
+    }
+
+    document.querySelectorAll('input[name="workflowScopeMode"]').forEach(radio => {
+        radio.addEventListener('change', syncWorkflowScopeMode);
+    });
+    syncWorkflowScopeMode();
+</script>
+}
+
+<section class="enterprise-section">
+    <div class="table-responsive">
+        <table class="data-table workflow-profile-table">
+            <thead><tr><th>Kho</th><th>Phạm vi</th><th>Phân hệ</th><th>Tên quy tắc</th><th>Bước quét</th><th>Kiểm phẩm</th><th>Duyệt</th><th>Đóng gói</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+                @if (!Model.Profiles.Any())
+                {
+                    <tr><td colspan="9" class="empty-state">Chưa có cấu hình quy trình.</td></tr>
+                }
+                @foreach (var profile in Model.Profiles)
+                {
+                    <tr>
+                        <td>@profile.Warehouse.WarehouseCode</td>
+                        <td>@WorkflowScopeLabel(profile.OwnerPartner)</td>
+                        <td>@WorkflowModuleLabel(profile.ModuleKey)</td>
+                        <td>@WorkflowProfileLabel(profile.ProfileName)</td>
+                        <td>
+                            <div class="enterprise-badge-stack">
+                                <span class="status-badge">Vị trí: @(profile.RequireLocationScan ? "Có" : "Không")</span>
+                                <span class="status-badge">Vật tư: @(profile.RequireItemScan ? "Có" : "Không")</span>
+                                <span class="status-badge">Thùng lấy hàng: @(profile.RequireToteScan ? "Có" : "Không")</span>
+                                <span class="status-badge">Sê-ri: @(profile.RequireSerialScan ? "Có" : "Không")</span>
+                            </div>
+                        </td>
+                        <td>@(profile.RequireQc ? "Có" : "Không")</td>
+                        <td>@(profile.RequireApproval ? "Có" : "Không")</td>
+                        <td>@(profile.RequirePacking ? "Có" : "Không")</td>
+                        <td><span class="status-badge">@(profile.IsActive ? "Đang dùng" : "Tạm tắt")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

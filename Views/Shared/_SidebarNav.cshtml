@@ -1,0 +1,405 @@
+@{
+    var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var isAdmin = WmsRoles.IsAdmin(currentRole);
+    var isManager = WmsRoles.IsManager(currentRole);
+    var isViewer = WmsRoles.IsViewerOnly(currentRole);
+    var isAdminOrManager = WmsRoles.IsAdminOrManager(currentRole);
+    var canOperate = WmsRoles.IsWarehouseOperator(currentRole);
+    var canInbound = WmsRoles.IsInbound(currentRole);
+    var canOutbound = WmsRoles.IsOutbound(currentRole);
+    var canInventory = WmsRoles.IsInventory(currentRole);
+    var canTransport = WmsRoles.IsTransport(currentRole);
+    var canSeeReports = WmsRoles.IsReportViewer(currentRole);
+    var canSeeOperationalReports = isAdminOrManager || WmsRoles.IsReportingSpecialist(currentRole);
+    var canReadInventory = canInventory || isViewer;
+    var canSeeFinancialReports = isAdmin || User.Claims.Any(c => c.Type == "perm" && c.Value == "report.view.financial");
+    var canManageYardBilling = isAdminOrManager;
+    var canManageThreePlBilling = isAdmin || User.Claims.Any(c => c.Type == "perm" && c.Value == "billing.3pl.manage");
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var act = ViewContext.RouteData.Values["action"]?.ToString();
+    var voucherTypeQuery = Context.Request.Query["type"].FirstOrDefault();
+    var stockStatusQuery = Context.Request.Query["stockStatus"].FirstOrDefault();
+    var navContextQuery = Context.Request.Query["nav"].FirstOrDefault();
+    var mapContextQuery = Context.Request.Query["map"].FirstOrDefault();
+    var isCreateInbound = ctrl == "Vouchers" && act == "Create"
+        && (voucherTypeQuery == "1" || string.Equals(voucherTypeQuery, "NhapKho", StringComparison.OrdinalIgnoreCase));
+    var isCreateOutbound = ctrl == "Vouchers" && act == "Create"
+        && (voucherTypeQuery == "2" || string.Equals(voucherTypeQuery, "XuatKho", StringComparison.OrdinalIgnoreCase));
+    var isCreateAdjustment = ctrl == "Vouchers" && act == "Create"
+        && (voucherTypeQuery == "5" || string.Equals(voucherTypeQuery, "DieuChinh", StringComparison.OrdinalIgnoreCase));
+    var isStockMovement = ctrl == "Reports" && act == "StockMovement";
+    var isInboundStockMovement = isStockMovement && string.Equals(navContextQuery, "inbound", StringComparison.OrdinalIgnoreCase);
+    var isInventoryStockMovement = isStockMovement && !isInboundStockMovement;
+    var isLowStockItems = ctrl == "Items" && act == "Index" && string.Equals(stockStatusQuery, "low", StringComparison.OrdinalIgnoreCase);
+    var isMasterItems = ctrl == "Items" && act == "Index" && string.IsNullOrWhiteSpace(stockStatusQuery);
+    var isMasterLocationMap = ctrl == "Warehouses" && act == "InventoryMap" && string.Equals(mapContextQuery, "master", StringComparison.OrdinalIgnoreCase);
+    var isInventoryMap = ctrl == "Warehouses" && act == "InventoryMap" && !isMasterLocationMap;
+    var isInventoryReportView = ctrl == "Reports" && act == "Inventory" && string.Equals(navContextQuery, "report", StringComparison.OrdinalIgnoreCase);
+    var isInventoryCurrentView = ctrl == "Reports" && act == "Inventory" && !isInventoryReportView;
+    var isTransportShipping = ctrl == "Operations" && act == "Shipping" && string.Equals(navContextQuery, "transport", StringComparison.OrdinalIgnoreCase);
+    var isOutboundShipping = ctrl == "Operations" && act == "Shipping" && !isTransportShipping;
+    var layoutPendingInboundApprovals = (int)(ViewData["LayoutPendingInboundApprovals"] ?? 0);
+    var sampleDataAction = "\u0044emoData";
+}
+
+<nav class="sidebar-nav">
+    <div class="nav-section nav-rail-link" data-nav-kind="link" data-nav-label="Trang chính">
+        <a class="nav-link @(ctrl == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index" aria-label="Trang chính">
+            <span class="nav-icon"><i class="fas fa-chart-pie"></i></span> Trang chính
+        </a>
+    </div>
+
+    @if (canInbound)
+    {
+        <div class="nav-section nav-rail-group" data-section="inbound" data-nav-kind="group" data-nav-label="Nhập kho">
+            <button class="nav-section-title nav-section-inbound" type="button" data-section="inbound" aria-expanded="true" aria-label="Nhập kho">
+                <span class="nav-section-icon"><i class="fas fa-arrow-down"></i></span>
+                <span class="nav-section-label">NHẬP KHO</span>
+                @if (layoutPendingInboundApprovals > 0)
+                {
+                    <span class="nav-section-badge">@layoutPendingInboundApprovals</span>
+                }
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                <a class="nav-link @(isCreateInbound ? "active" : "")" asp-controller="Vouchers" asp-action="Create" asp-route-type="1">
+                    <span class="nav-icon"><i class="fas fa-plus"></i></span> Tạo phiếu nhập
+                </a>
+                @if (isAdminOrManager)
+                {
+                    <a class="nav-link @(ctrl == "Operations" && act == "InboundApprovals" ? "active" : "")" asp-controller="Operations" asp-action="InboundApprovals">
+                        <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Duyệt phiếu nhập
+                        @if (layoutPendingInboundApprovals > 0)
+                        {
+                            <span class="nav-badge">@layoutPendingInboundApprovals</span>
+                        }
+                    </a>
+                }
+                <a class="nav-link @(ctrl == "Operations" && act == "Receiving" ? "active" : "")" asp-controller="Operations" asp-action="Receiving">
+                    <span class="nav-icon"><i class="fas fa-truck-loading"></i></span> Tiếp nhận hàng
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "RfReceiving" ? "active" : "")" asp-controller="Operations" asp-action="RfReceiving">
+                    <span class="nav-icon"><i class="fas fa-mobile-screen"></i></span> Quét nhận hàng
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "QualityInspection" ? "active" : "")" asp-controller="Operations" asp-action="QualityInspection">
+                    <span class="nav-icon"><i class="fas fa-microscope"></i></span> Kiểm tra chất lượng
+                </a>
+                <a class="nav-link @(isInboundStockMovement ? "active" : "")" asp-controller="Reports" asp-action="StockMovement" asp-route-nav="inbound">
+                    <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span> Lịch sử nhập kho
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (canOutbound)
+    {
+        <div class="nav-section nav-rail-group" data-section="outbound" data-nav-kind="group" data-nav-label="Xuất kho">
+            <button class="nav-section-title nav-section-outbound" type="button" data-section="outbound" aria-expanded="true" aria-label="Xuất kho">
+                <span class="nav-section-icon"><i class="fas fa-arrow-up"></i></span>
+                <span class="nav-section-label">XUẤT KHO</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                <a class="nav-link @(isCreateOutbound ? "active" : "")" asp-controller="Vouchers" asp-action="Create" asp-route-type="2">
+                    <span class="nav-icon"><i class="fas fa-plus"></i></span> Tạo phiếu xuất
+                </a>
+                @if (isAdminOrManager)
+                {
+                    <a class="nav-link @(ctrl == "Operations" && act == "Waves" ? "active" : "")" asp-controller="Operations" asp-action="Waves">
+                        <span class="nav-icon"><i class="fas fa-layer-group"></i></span> Đợt gom đơn
+                    </a>
+                }
+                <a class="nav-link @(ctrl == "Operations" && act == "PickTasks" ? "active" : "")" asp-controller="Operations" asp-action="PickTasks">
+                    <span class="nav-icon"><i class="fas fa-list-check"></i></span> Nhiệm vụ lấy hàng
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "RfPicking" ? "active" : "")" asp-controller="Operations" asp-action="RfPicking">
+                    <span class="nav-icon"><i class="fas fa-mobile-alt"></i></span> Quét lấy hàng
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "NextTask" ? "active" : "")" asp-controller="Operations" asp-action="NextTask">
+                    <span class="nav-icon"><i class="fas fa-forward"></i></span> Nhiệm vụ tiếp theo
+                </a>
+                <a class="nav-link @(isOutboundShipping ? "active" : "")" asp-controller="Operations" asp-action="Shipping">
+                    <span class="nav-icon"><i class="fas fa-box-open"></i></span> Đóng gói & giao
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (canReadInventory)
+    {
+        <div class="nav-section nav-rail-group" data-section="inventory" data-nav-kind="group" data-nav-label="Tồn kho">
+            <button class="nav-section-title nav-section-inventory" type="button" data-section="inventory" aria-expanded="true" aria-label="Tồn kho">
+                <span class="nav-section-icon"><i class="fas fa-boxes-stacked"></i></span>
+                <span class="nav-section-label">TỒN KHO</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                <a class="nav-link @(isInventoryCurrentView ? "active" : "")" asp-controller="Reports" asp-action="Inventory" asp-route-nav="inventory">
+                    <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span> Xem tồn kho
+                </a>
+                <a class="nav-link @(isInventoryMap ? "active" : "")" asp-controller="Warehouses" asp-action="InventoryMap" asp-route-map="inventory">
+                    <span class="nav-icon"><i class="fas fa-table-cells"></i></span> Sơ đồ kho
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "PackageLookup" ? "active" : "")" asp-controller="Operations" asp-action="PackageLookup">
+                    <span class="nav-icon"><i class="fas fa-tags"></i></span> Tra cứu mã kiện
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "SerialLookup" ? "active" : "")" asp-controller="Operations" asp-action="SerialLookup">
+                    <span class="nav-icon"><i class="fas fa-fingerprint"></i></span> Tra cứu số sê-ri
+                </a>
+                @if (canInventory)
+                {
+                    <a class="nav-link @(act == "StockCount" ? "active" : "")" asp-controller="Reports" asp-action="StockCount">
+                    <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Kiểm kê
+                </a>
+                    <a class="nav-link @(ctrl == "Reports" && act == "InventoryRisk" ? "active" : "")" asp-controller="Reports" asp-action="InventoryRisk">
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span> Kiểm kê thông minh
+                    </a>
+                    <a class="nav-link @(isCreateAdjustment ? "active" : "")" asp-controller="Vouchers" asp-action="Create" asp-route-type="5">
+                        <span class="nav-icon"><i class="fas fa-sliders"></i></span> Điều chỉnh tồn kho
+                    </a>
+                    <a class="nav-link @(ctrl == "Operations" && act == "MovementTasks" ? "active" : "")" asp-controller="Operations" asp-action="MovementTasks">
+                        <span class="nav-icon"><i class="fas fa-dolly"></i></span> Nhiệm vụ di chuyển
+                    </a>
+                    <a class="nav-link @(ctrl == "Operations" && act == "RfMovement" ? "active" : "")" asp-controller="Operations" asp-action="RfMovement">
+                        <span class="nav-icon"><i class="fas fa-mobile-screen"></i></span> Quét di chuyển
+                    </a>
+                }
+                <a class="nav-link @(isLowStockItems ? "active" : "")" asp-controller="Items" asp-action="Index" asp-route-stockStatus="low">
+                    <span class="nav-icon"><i class="fas fa-triangle-exclamation"></i></span> Hàng sắp thiếu
+                </a>
+                @if (canSeeOperationalReports)
+                {
+                    <a class="nav-link @(act == "SlowMovingReport" ? "active" : "")" asp-controller="Reports" asp-action="SlowMovingReport">
+                    <span class="nav-icon"><i class="fas fa-hourglass-half"></i></span> Hàng chậm
+                </a>
+                }
+                <a class="nav-link @(isInventoryStockMovement ? "active" : "")" asp-controller="Reports" asp-action="StockMovement" asp-route-nav="inventory">
+                    <span class="nav-icon"><i class="fas fa-right-left"></i></span> Lịch sử nhập xuất
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (canTransport)
+    {
+        <div class="nav-section nav-rail-group" data-section="transport" data-nav-kind="group" data-nav-label="Vận chuyển">
+            <button class="nav-section-title nav-section-transport" type="button" data-section="transport" aria-expanded="true" aria-label="Vận chuyển">
+                <span class="nav-section-icon"><i class="fas fa-truck-fast"></i></span>
+                <span class="nav-section-label">VẬN CHUYỂN</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                <a class="nav-link @(isTransportShipping ? "active" : "")" asp-controller="Operations" asp-action="Shipping" asp-route-nav="transport">
+                    <span class="nav-icon"><i class="fas fa-box-open"></i></span> Đóng gói & giao
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "ShippingDispatch" ? "active" : "")" asp-controller="Operations" asp-action="ShippingDispatch">
+                    <span class="nav-icon"><i class="fas fa-route"></i></span> Điều phối vận chuyển
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "ShipmentLoads" ? "active" : "")" asp-controller="Operations" asp-action="ShipmentLoads">
+                    <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span> Bảng chuyến xe
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "DeliveryReconciliation" ? "active" : "")" asp-controller="Operations" asp-action="DeliveryReconciliation">
+                    <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Đối soát giao hàng
+                </a>
+                <a class="nav-link @(ctrl == "Labels" ? "active" : "")" asp-controller="Labels" asp-action="Index">
+                    <span class="nav-icon"><i class="fas fa-tags"></i></span> Nhãn & chứng từ
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "DockBoard" ? "active" : "")" asp-controller="Operations" asp-action="DockBoard">
+                    <span class="nav-icon"><i class="fas fa-display"></i></span> Bảng điều phối cửa bến
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "YardManagement" ? "active" : "")" asp-controller="Operations" asp-action="YardManagement">
+                    <span class="nav-icon"><i class="fas fa-square-parking"></i></span> Quản lý bãi xe
+                </a>
+                @if (isAdminOrManager)
+                {
+                    <a class="nav-link @(ctrl == "Operations" && act == "CarrierConnectors" ? "active" : "")" asp-controller="Operations" asp-action="CarrierConnectors">
+                        <span class="nav-icon"><i class="fas fa-network-wired"></i></span> Bộ kết nối vận tải
+                    </a>
+                    <a class="nav-link @(ctrl == "Operations" && act == "CrossDockOpportunities" ? "active" : "")" asp-controller="Operations" asp-action="CrossDockOpportunities">
+                        <span class="nav-icon"><i class="fas fa-shuffle"></i></span> Chuyển thẳng
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (canSeeReports)
+    {
+        <div class="nav-section nav-rail-group" data-section="reports" data-nav-kind="group" data-nav-label="Báo cáo">
+            <button class="nav-section-title nav-section-reports" type="button" data-section="reports" aria-expanded="true" aria-label="Báo cáo">
+                <span class="nav-section-icon"><i class="fas fa-chart-bar"></i></span>
+                <span class="nav-section-label">BÁO CÁO</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                @if (canSeeOperationalReports)
+                {
+                    <a class="nav-link @(act == "WarehouseOverview" ? "active" : "")" asp-controller="Reports" asp-action="WarehouseOverview">
+                        <span class="nav-icon"><i class="fas fa-table-columns"></i></span> Tổng quan kho
+                    </a>
+                    <a class="nav-link @(act == "OpsKpi" ? "active" : "")" asp-controller="Reports" asp-action="OpsKpi">
+                        <span class="nav-icon"><i class="fas fa-gauge-high"></i></span> Chỉ số vận hành
+                    </a>
+                    <a class="nav-link @(act == "InventoryInOutSummary" ? "active" : "")" asp-controller="Reports" asp-action="InventoryInOutSummary">
+                        <span class="nav-icon"><i class="fas fa-chart-column"></i></span> Thống kê nhập/xuất
+                    </a>
+                }
+                <a class="nav-link @(isInventoryReportView ? "active" : "")" asp-controller="Reports" asp-action="Inventory" asp-route-nav="report">
+                    <span class="nav-icon"><i class="fas fa-boxes-stacked"></i></span> Báo cáo tồn kho
+                </a>
+                @if (canSeeOperationalReports)
+                {
+                    <a class="nav-link @(act == "DockToStock" ? "active" : "")" asp-controller="Reports" asp-action="DockToStock">
+                        <span class="nav-icon"><i class="fas fa-stopwatch"></i></span> Báo cáo vận hành vận chuyển
+                    </a>
+                    @if (canSeeFinancialReports)
+                    {
+                        <a class="nav-link @(act == "FinancialCostDashboard" ? "active" : "")" asp-controller="Reports" asp-action="FinancialCostDashboard">
+                            <span class="nav-icon"><i class="fas fa-coins"></i></span> Báo cáo chi phí
+                        </a>
+                    }
+                    @if (canManageYardBilling)
+                    {
+                        <a class="nav-link @(ctrl == "Operations" && act == "YardBillingCharges" ? "active" : "")" asp-controller="Operations" asp-action="YardBillingCharges">
+                            <span class="nav-icon"><i class="fas fa-file-invoice-dollar"></i></span> Đối soát phí lưu bãi
+                        </a>
+                    }
+                    @if (canManageThreePlBilling)
+                    {
+                        <a class="nav-link @(ctrl == "Operations" && act == "ThreePlBillingRuns" ? "active" : "")" asp-controller="Operations" asp-action="ThreePlBillingRuns">
+                            <span class="nav-icon"><i class="fas fa-file-invoice"></i></span> Tính phí kho nhiều chủ hàng
+                        </a>
+                    }
+                    <a class="nav-link @(act == "SemanticBi" ? "active" : "")" asp-controller="Reports" asp-action="SemanticBi">
+                        <span class="nav-icon"><i class="fas fa-chart-simple"></i></span> Báo cáo quản trị dữ liệu
+                    </a>
+                    <a class="nav-link @(ctrl == "Operations" && act == "ExceptionCenter" ? "active" : "")" asp-controller="Operations" asp-action="ExceptionCenter">
+                        <span class="nav-icon"><i class="fas fa-triangle-exclamation"></i></span> Bất thường dữ liệu
+                    </a>
+                    <a class="nav-link @(act == "ExpiryReport" ? "active" : "")" asp-controller="Reports" asp-action="ExpiryReport">
+                        <span class="nav-icon"><i class="fas fa-clock"></i></span> Sắp hết hạn
+                    </a>
+                    <a class="nav-link @(act == "AbcAnalysis" ? "active" : "")" asp-controller="Reports" asp-action="AbcAnalysis">
+                        <span class="nav-icon"><i class="fas fa-chart-pie"></i></span> Phân nhóm quan trọng
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (isAdminOrManager)
+    {
+        <div class="nav-section nav-rail-group" data-section="master" data-nav-kind="group" data-nav-label="Danh mục">
+            <button class="nav-section-title nav-section-master" type="button" data-section="master" aria-expanded="true" aria-label="Danh mục">
+                <span class="nav-section-icon"><i class="fas fa-database"></i></span>
+                <span class="nav-section-label">DANH MỤC</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                <a class="nav-link @(ctrl == "Partners" ? "active" : "")" asp-controller="Partners" asp-action="Index">
+                    <span class="nav-icon"><i class="fas fa-handshake"></i></span> Đối tác
+                </a>
+                <a class="nav-link @(isMasterItems ? "active" : "")" asp-controller="Items" asp-action="Index">
+                    <span class="nav-icon"><i class="fas fa-tags"></i></span> Danh mục vật tư
+                </a>
+                <a class="nav-link @(ctrl == "Units" ? "active" : "")" asp-controller="Units" asp-action="Index">
+                    <span class="nav-icon"><i class="fas fa-ruler"></i></span> Đơn vị tính
+                </a>
+                <a class="nav-link @(ctrl == "Warehouses" && act == "Index" ? "active" : "")" asp-controller="Warehouses" asp-action="Index">
+                    <span class="nav-icon"><i class="fas fa-warehouse"></i></span> Khu vực kho
+                </a>
+                <a class="nav-link @(isMasterLocationMap ? "active" : "")" asp-controller="Warehouses" asp-action="InventoryMap" asp-route-map="master">
+                    <span class="nav-icon"><i class="fas fa-table-cells"></i></span> Vị trí/kệ/khu chứa
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "SortationConfigs" ? "active" : "")" asp-controller="Operations" asp-action="SortationConfigs">
+                    <span class="nav-icon"><i class="fas fa-table-cells-large"></i></span> Cấu hình phân loại đơn
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "ThreePlContracts" ? "active" : "")" asp-controller="Operations" asp-action="ThreePlContracts">
+                    <span class="nav-icon"><i class="fas fa-file-contract"></i></span> Hợp đồng kho nhiều chủ hàng
+                </a>
+                @if (canManageYardBilling)
+                {
+                    <a class="nav-link @(ctrl == "Operations" && act == "YardBillingRates" ? "active" : "")" asp-controller="Operations" asp-action="YardBillingRates">
+                        <span class="nav-icon"><i class="fas fa-square-parking"></i></span> Bảng giá phí bãi
+                    </a>
+                }
+                @if (canManageThreePlBilling)
+                {
+                    <a class="nav-link @(ctrl == "Operations" && act == "ThreePlBillingRates" ? "active" : "")" asp-controller="Operations" asp-action="ThreePlBillingRates">
+                        <span class="nav-icon"><i class="fas fa-coins"></i></span> Bảng giá kho nhiều chủ hàng
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="nav-section nav-rail-group" data-section="system" data-nav-kind="group" data-nav-label="Hệ thống">
+            <button class="nav-section-title nav-section-system" type="button" data-section="system" aria-expanded="true" aria-label="Hệ thống">
+                <span class="nav-section-icon"><i class="fas fa-shield-halved"></i></span>
+                <span class="nav-section-label">HỆ THỐNG</span>
+                <i class="fas fa-chevron-down section-chevron"></i>
+            </button>
+            <div class="nav-section-body">
+                @if (isAdmin)
+                {
+                    <a class="nav-link @(ctrl == "Users" && act == "Index" ? "active" : "")" asp-controller="Users" asp-action="Index">
+                        <span class="nav-icon"><i class="fas fa-users-cog"></i></span> Người dùng
+                    </a>
+                    <a class="nav-link @(ctrl == "Users" && act == "LoginHelpRequests" ? "active" : "")" asp-controller="Users" asp-action="LoginHelpRequests">
+                        <span class="nav-icon"><i class="fas fa-life-ring"></i></span> Yêu cầu truy cập
+                    </a>
+                }
+                <a class="nav-link @(ctrl == "Operations" && act == "ZoneAssignment" ? "active" : "")" asp-controller="Operations" asp-action="ZoneAssignment">
+                    <span class="nav-icon"><i class="fas fa-map-marked-alt"></i></span> Phân quyền khu vực
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "WorkflowProfiles" ? "active" : "")" asp-controller="Operations" asp-action="WorkflowProfiles">
+                    <span class="nav-icon"><i class="fas fa-sliders"></i></span> Quy tắc vận hành
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "OrderStreamingConfigs" ? "active" : "")" asp-controller="Operations" asp-action="OrderStreamingConfigs">
+                    <span class="nav-icon"><i class="fas fa-bolt"></i></span> Cấu hình phát hành trực tiếp
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "OptimizationDashboard" ? "active" : "")" asp-controller="Operations" asp-action="OptimizationDashboard">
+                    <span class="nav-icon"><i class="fas fa-route"></i></span> Tối ưu vận hành
+                </a>
+                <a class="nav-link @(ctrl == "Operations" && act == "AutomationDashboard" ? "active" : "")" asp-controller="Operations" asp-action="AutomationDashboard">
+                    <span class="nav-icon"><i class="fas fa-robot"></i></span> Tự động hóa thiết bị
+                </a>
+                <a class="nav-link @(act == "StockSnapshot" ? "active" : "")" asp-controller="Reports" asp-action="StockSnapshot">
+                    <span class="nav-icon"><i class="fas fa-lock"></i></span> Chốt tồn
+                </a>
+                <a class="nav-link @(act == "PeriodLocks" ? "active" : "")" asp-controller="Reports" asp-action="PeriodLocks">
+                    <span class="nav-icon"><i class="fas fa-calendar-check"></i></span> Khóa kỳ
+                </a>
+                @if (isAdmin)
+                {
+                    <a class="nav-link @(ctrl == "System" && act == "SreDashboard" ? "active" : "")" asp-controller="System" asp-action="SreDashboard">
+                        <span class="nav-icon"><i class="fas fa-heart-pulse"></i></span> Giám sát hệ thống
+                    </a>
+                    <a class="nav-link @(act == "AuditTrail" ? "active" : "")" asp-controller="Reports" asp-action="AuditTrail">
+                        <span class="nav-icon"><i class="fas fa-history"></i></span> Nhật ký hệ thống
+                    </a>
+                    <a class="nav-link @(act == "AuditAnalytics" ? "active" : "")" asp-controller="Reports" asp-action="AuditAnalytics">
+                        <span class="nav-icon"><i class="fas fa-user-shield"></i></span> Phân tích nhật ký
+                    </a>
+                    <a class="nav-link @(act == "Alerts" ? "active" : "")" asp-controller="Reports" asp-action="Alerts">
+                        <span class="nav-icon"><i class="fas fa-bell"></i></span> Cảnh báo
+                    </a>
+                    <a class="nav-link @(ctrl == "System" && act == sampleDataAction ? "active" : "")" href="@Url.Action(sampleDataAction, "System")">
+                        <span class="nav-icon"><i class="fas fa-database"></i></span> Dữ liệu mẫu
+                    </a>
+                    <a class="nav-link @(ctrl == "Operations" && act == "IntegrationDashboard" ? "active" : "")" asp-controller="Operations" asp-action="IntegrationDashboard">
+                        <span class="nav-icon"><i class="fas fa-network-wired"></i></span> Tích hợp hệ thống
+                    </a>
+                    <a class="nav-link @(act == "TrustedDevices" ? "active" : "")" asp-controller="Account" asp-action="TrustedDevices">
+                        <span class="nav-icon"><i class="fas fa-shield-halved"></i></span> Thiết bị tin cậy
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="nav-section nav-rail-link" data-nav-kind="link" data-nav-label="Hướng dẫn sử dụng">
+        <a class="nav-link @(ctrl == "Help" ? "active" : "")" asp-controller="Help" asp-action="Index" aria-label="Hướng dẫn sử dụng">
+            <span class="nav-icon"><i class="fas fa-book-open"></i></span> Hướng dẫn sử dụng
+        </a>
+    </div>
+</nav>

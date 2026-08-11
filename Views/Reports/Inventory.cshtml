@@ -1,0 +1,203 @@
+@model List<WMS.Models.Item>
+@{
+    ViewData["Title"] = "Báo cáo tồn kho hiện tại";
+    var canSeeFinancial = (bool)(ViewBag.CanSeeFinancial ?? false);
+    var search = ViewBag.Search as string;
+    var page = (int)(ViewBag.Page ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? 25);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalStockValue = (decimal)(ViewBag.TotalStockValue ?? 0m);
+    var lowStockCount = (int)(ViewBag.LowStockCount ?? 0);
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Báo cáo tồn kho</h1>
+        <p class="page-subtitle">Tổng hợp số lượng và giá trị hàng hóa đang lưu trữ theo kho hoặc theo danh mục.</p>
+    </div>
+    <div class="page-actions">
+        @if (canSeeFinancial)
+        {
+            <a asp-controller="Reports" asp-action="ExportInventory" asp-route-warehouseId="@ViewBag.WarehouseId" asp-route-categoryId="@ViewBag.CategoryId" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Xuất bảng tính
+            </a>
+        }
+    </div>
+</div>
+
+<div class="user-guide">
+    <div class="user-guide-title"><i class="fas fa-circle-info"></i> Cách xem tồn kho nhanh</div>
+    <div class="user-guide-text">Chọn kho cần xem, có thể lọc thêm theo danh mục. Dùng ô tìm nhanh để tra mã hoặc tên vật tư trực tiếp trên bảng.</div>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="form-group">
+        <label class="form-label">Kho</label>
+        <select id="inventoryWarehouse" name="warehouseId" class="form-control" aria-label="Kho">
+            <option value="">Tất cả kho (tổng hợp)</option>
+            @foreach (var w in (List<WMS.Models.Warehouse>)ViewBag.Warehouses)
+            {
+                <option value="@w.WarehouseId" selected="@(ViewBag.WarehouseId != null && (int)ViewBag.WarehouseId == w.WarehouseId)">@w.WarehouseName</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="form-label">Danh mục</label>
+        <select id="inventoryCategory" name="categoryId" class="form-control" aria-label="Danh mục">
+            <option value="">Tất cả danh mục</option>
+            @foreach (var c in (List<WMS.Models.ItemCategory>)ViewBag.Categories)
+            {
+                <option value="@c.CategoryId" selected="@(ViewBag.CategoryId != null && (int)ViewBag.CategoryId == c.CategoryId)">@c.CategoryName</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="form-label" for="inventorySearch">Mã hoặc tên vật tư</label>
+        <input id="inventorySearch" type="search" name="search" value="@search" class="form-control" placeholder="Nhập mã hoặc tên vật tư..." />
+    </div>
+    <div class="form-group">
+        <label class="form-label" for="inventoryPageSize">Số dòng / trang</label>
+        <select id="inventoryPageSize" name="pageSize" class="form-control">
+            @foreach (var size in new[] { 10, 25, 50, 100 })
+            {
+                <option value="@size" selected="@(pageSize == size)">@size</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="form-label">&nbsp;</label>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Xem tồn kho</button>
+    </div>
+</form>
+
+<div class="grid-3 mb-3">
+    <div class="stat-card accent">
+        <div class="stat-value">@totalCount</div>
+        <div class="stat-label">Tổng số mã vật tư</div>
+    </div>
+    @if (canSeeFinancial)
+    {
+        <div class="stat-card success">
+            <div class="stat-value">@totalStockValue.ToString("N0")</div>
+            <div class="stat-label">Tổng giá trị lưu trữ (VNĐ)</div>
+        </div>
+    }
+    <div class="stat-card warning">
+        <div class="stat-value">@lowStockCount</div>
+        <div class="stat-label">Vật tư sắp / đã hết</div>
+    </div>
+</div>
+
+<div class="mobile-table-card-list">
+    @foreach (var i in Model)
+    {
+        <div class="mobile-table-card">
+            <div class="mobile-table-card-title">
+                <div class="mobile-table-card-title-main">
+                <a asp-controller="Items" asp-action="Details" asp-route-id="@i.ItemId" class="td-code link-clean">@i.ItemCode</a>
+                    <div>@i.ItemName</div>
+                </div>
+                <span class="badge badge-purple">@i.ItemTypeName</span>
+            </div>
+            <div class="mobile-table-card-row"><span class="mobile-table-card-label">Danh mục</span><span class="mobile-table-card-value">@(i.Category?.CategoryName ?? "Chưa có")</span></div>
+            <div class="mobile-table-card-row"><span class="mobile-table-card-label">ĐVT</span><span class="mobile-table-card-value">@i.BaseUom?.UomCode</span></div>
+            <div class="mobile-table-card-row"><span class="mobile-table-card-label">Tồn kho</span><span class="mobile-table-card-value text-accent">@i.CurrentStock.ToString("#,##0.##")</span></div>
+            @if (canSeeFinancial)
+            {
+                <div class="mobile-table-card-row"><span class="mobile-table-card-label">Giá vốn BQ</span><span class="mobile-table-card-value">@i.UnitCost.ToString("N0")</span></div>
+                <div class="mobile-table-card-row"><span class="mobile-table-card-label">Thành tiền</span><span class="mobile-table-card-value text-success">@i.TotalStockValue.ToString("N0")</span></div>
+            }
+        </div>
+    }
+</div>
+
+<div class="table-container mobile-table-card-source">
+    <table id="inventoryTable">
+        <thead>
+            <tr>
+                <th>Mã</th>
+                <th>Tên vật tư / hàng hóa</th>
+                <th>Loại</th>
+                <th>Danh mục</th>
+                <th>ĐVT</th>
+                <th class="cell-right">Tồn kho hiện tại</th>
+                @if (canSeeFinancial)
+                {
+                    <th class="cell-right">Giá vốn BQ</th>
+                    <th class="cell-right">Thành tiền (VNĐ)</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="@(canSeeFinancial ? 8 : 6)" class="text-center text-muted cell-empty cell-empty-lg">Không có dữ liệu tồn kho phù hợp</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var i in Model)
+                {
+                    <tr>
+                    <td><a asp-controller="Items" asp-action="Details" asp-route-id="@i.ItemId" class="td-code link-clean">@i.ItemCode</a></td>
+                        <td class="td-name fw-600">@i.ItemName</td>
+                        <td><span class="badge badge-purple">@i.ItemTypeName</span></td>
+                        <td>@(i.Category?.CategoryName ?? "Chưa có")</td>
+                        <td>@i.BaseUom?.UomCode</td>
+                        <td class="td-number text-accent fw-700">@i.CurrentStock.ToString("#,##0.##")</td>
+                        @if (canSeeFinancial)
+                        {
+                            <td class="td-number">@i.UnitCost.ToString("N0")</td>
+                            <td class="td-number text-success fw-600">@i.TotalStockValue.ToString("N0")</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            @if (canSeeFinancial)
+            {
+                <tr>
+                    <td colspan="7" class="text-right fw-700">TỔNG CỘNG:</td>
+                    <td class="td-number text-success fw-700 fs-lg">@totalStockValue.ToString("N0")</td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-right fw-700">TỔNG CỘNG:</td>
+                </tr>
+            }
+        </tfoot>
+    </table>
+</div>
+
+<nav class="table-pagination" aria-label="Phân trang báo cáo tồn kho">
+    <span class="step-chip">@totalCount mã vật tư · Trang @(page)/@totalPages</span>
+    @if (page > 1)
+    {
+        <a class="btn btn-sm btn-secondary"
+           asp-action="Inventory"
+           asp-route-page="@(page - 1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-warehouseId="@ViewBag.WarehouseId"
+           asp-route-categoryId="@ViewBag.CategoryId"
+           asp-route-search="@search">
+            <i class="fas fa-chevron-left" aria-hidden="true"></i> Trang trước
+        </a>
+    }
+    @if (page < totalPages)
+    {
+        <a class="btn btn-sm btn-secondary"
+           asp-action="Inventory"
+           asp-route-page="@(page + 1)"
+           asp-route-pageSize="@pageSize"
+           asp-route-warehouseId="@ViewBag.WarehouseId"
+           asp-route-categoryId="@ViewBag.CategoryId"
+           asp-route-search="@search">
+            Trang sau <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </a>
+    }
+</nav>

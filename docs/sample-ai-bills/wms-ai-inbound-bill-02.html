@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>WMS Pro - Bill nhập kho mẫu AI 02</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #172033; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.45; background: #fff; }
+    .document { width: 100%; min-height: 267mm; border: 1px solid #cfd7e3; padding: 18px; }
+    .topline { display: flex; justify-content: space-between; gap: 18px; border-bottom: 2px solid #6d28d9; padding-bottom: 12px; margin-bottom: 16px; }
+    .brand { font-size: 18px; font-weight: 700; color: #4c1d95; }
+    .subtitle, .doc-no { color: #526071; margin-top: 2px; }
+    .title { text-align: right; font-size: 20px; font-weight: 700; text-transform: uppercase; color: #172033; }
+    .doc-no { margin-top: 4px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 16px; }
+    .field { border: 1px solid #d8dee8; padding: 8px 10px; min-height: 44px; }
+    .label { display: block; color: #697586; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #cfd7e3; padding: 7px 8px; vertical-align: top; }
+    th { background: #f3e8ff; color: #4c1d95; font-size: 11px; text-align: left; text-transform: uppercase; }
+    td.num, th.num { text-align: right; }
+    .note { margin-top: 14px; padding: 10px 12px; border: 1px solid #d8dee8; background: #f8fafc; color: #4a5568; }
+    .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; text-align: center; font-weight: 700; }
+    .signature-line { margin-top: 54px; border-top: 1px solid #9aa6b2; padding-top: 6px; font-weight: 400; color: #526071; }
+  </style>
+</head>
+<body>
+  <main class="document">
+    <section class="topline">
+      <div>
+        <div class="brand">WMS Pro</div>
+        <div class="subtitle">Kho Tổng Hợp Miền Nam</div>
+        <div class="subtitle">Mẫu chứng từ nhập kho cho kiểm thử Header + Lines</div>
+      </div>
+      <div>
+        <div class="title">Phiếu giao hàng nhập kho</div>
+        <div class="doc-no">Số chứng từ: AI-IN-20260603-002</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="field"><span class="label">Nhà cung cấp / nguồn giao</span>NCC-HP-002 - Công ty Vật liệu Hòa Phát</div>
+      <div class="field"><span class="label">Kho nhận</span>KHO-CHINH - Kho Tổng Hợp Miền Nam</div>
+      <div class="field"><span class="label">Ngày chứng từ</span>03/06/2026</div>
+      <div class="field"><span class="label">Xe / người giao</span>51D-333.33 - Lê Gia Hân</div>
+      <div class="field"><span class="label">Loại sở hữu hàng</span>Nội bộ</div>
+      <div class="field"><span class="label">Ghi chú</span>Nhập bổ sung vật tư hoàn thiện theo kế hoạch tuần 23.</div>
+    </section>
+
+    <table aria-label="Danh sách vật tư nhập kho">
+      <thead>
+        <tr>
+          <th>Mã vật tư</th>
+          <th>Tên vật tư</th>
+          <th class="num">Số lượng</th>
+          <th>ĐVT</th>
+          <th class="num">Đơn giá</th>
+          <th>Số lô</th>
+          <th>NSX</th>
+          <th>HSD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SON-DLX-E18L</td>
+          <td>Sơn nội thất Dulux EasyClean 18L</td>
+          <td class="num">24</td>
+          <td>L</td>
+          <td class="num">125000</td>
+          <td>SON-260603</td>
+          <td>03/06/2026</td>
+          <td>31/12/2028</td>
+        </tr>
+        <tr>
+          <td>ONG-PVC-BM21</td>
+          <td>Ống nhựa Bình Minh PVC Ø21</td>
+          <td class="num">180</td>
+          <td>m</td>
+          <td class="num">24000</td>
+          <td>PVC-260603</td>
+          <td>03/06/2026</td>
+          <td>31/12/2031</td>
+        </tr>
+        <tr>
+          <td>KEO-APL-FOAM</td>
+          <td>Keo bọt nở chống thấm Apollo Foam</td>
+          <td class="num">36</td>
+          <td>Bottle</td>
+          <td class="num">98000</td>
+          <td>KEO-260603</td>
+          <td>03/06/2026</td>
+          <td>31/12/2027</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">Lưu ý: chứng từ mẫu dùng cho kiểm thử OCR; không thay thế chứng từ kế toán hoặc biên bản giao nhận thật.</div>
+    <section class="signatures">
+      <div>Người giao<div class="signature-line">Ký và ghi rõ họ tên</div></div>
+      <div>Thủ kho<div class="signature-line">Ký và ghi rõ họ tên</div></div>
+      <div>Quản lý kho<div class="signature-line">Ký và ghi rõ họ tên</div></div>
+    </section>
+  </main>
+</body>
+</html>

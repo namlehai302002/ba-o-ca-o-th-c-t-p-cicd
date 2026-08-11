@@ -1,0 +1,1674 @@
+@{
+    ViewData["Title"] = "Hướng dẫn sử dụng";
+
+    var sections = new[]
+    {
+        new
+        {
+            Key = "bat-dau",
+            Title = "Bắt đầu sử dụng hệ thống",
+            Icon = "fa-route",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Giúp người mới hiểu nhanh cách đăng nhập, chọn kho vận hành, đọc menu và đi đến đúng màn trước khi thao tác nghiệp vụ.",
+            Screen = "Đăng nhập, Trang chính, Tra cứu phiếu, menu trái, tìm kiếm nhanh trên thanh trên cùng.",
+            Prerequisites = new[]
+            {
+                "Tài khoản đã được kích hoạt và gán vai trò phù hợp.",
+                "Nếu là nhân viên hoặc quản lý theo kho, tài khoản phải được gán đúng kho thao tác.",
+                "Trình duyệt dùng địa chỉ hệ thống chính thức, không dùng đường dẫn thử nghiệm cục bộ."
+            },
+            Steps = new[]
+            {
+                "Mở màn đăng nhập và nhập thư điện tử hoặc tên đăng nhập.",
+                "Nhập mật khẩu, xác thực bổ sung nếu hệ thống yêu cầu.",
+                "Kiểm tra góc phải phía trên để biết tài khoản, vai trò và kho đang vận hành.",
+                "Dùng ô tìm kiếm nhanh để mở phiếu, vật tư, mã vạch hoặc màn nghiệp vụ.",
+                "Dùng menu trái theo nhóm nghiệp vụ: Nhập kho, Xuất kho, Tồn kho, Vận chuyển, Báo cáo, Danh mục, Hệ thống.",
+                "Nếu menu dài, cuộn trong vùng menu; không cần bật toàn màn hình để thấy đủ mục."
+            },
+            CommonErrors = new[]
+            {
+                "Không thấy màn cần dùng: kiểm tra vai trò hoặc kho được gán cho tài khoản.",
+                "Không đăng nhập được: kiểm tra trạng thái tài khoản, mật khẩu và yêu cầu xác thực bổ sung.",
+                "Vào sai kho: báo quản lý hoặc quản trị viên kiểm tra lại phân quyền kho."
+            },
+            ExpectedResult = "Người dùng biết mình đang ở kho nào, vai trò nào, và mở được đúng nhóm màn cần thao tác.",
+            SafetyNote = "Không dùng chung tài khoản giữa nhiều người; mọi thao tác đều đi vào nhật ký và truy vết theo người dùng."
+        },
+        new
+        {
+            Key = "vai-tro-phan-quyen",
+            Title = "Vai trò và phân quyền",
+            Icon = "fa-user-shield",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Thiết lập đúng quyền theo nguyên tắc tối thiểu cần thiết, tránh để nhân viên thấy nút hoặc thực hiện thao tác không thuộc trách nhiệm.",
+            Screen = "Hệ thống -> Người dùng, Hệ thống -> Yêu cầu truy cập, Hệ thống -> Phân quyền khu vực, Tài khoản -> Thiết bị tin cậy.",
+            Prerequisites = new[]
+            {
+                "Đã xác định người dùng thuộc nhóm quản trị, quản lý, nhân viên hay chỉ xem.",
+                "Đã xác định kho, khu vực và chủ hàng mà người dùng được phép thao tác.",
+                "Có người quản trị chịu trách nhiệm phê duyệt tài khoản mới."
+            },
+            Steps = new[]
+            {
+                "Tạo tài khoản với tên đăng nhập, họ tên, thư điện tử và mật khẩu tạm.",
+                "Gán vai trò: Quản trị viên cho cấu hình hệ thống; Quản lý kho cho duyệt/điều phối; Nhân viên kho cho thao tác thực tế.",
+                "Gán kho thao tác cho tài khoản không phải quản trị viên.",
+                "Nếu dùng nhiều chủ hàng, gán phạm vi chủ hàng để không thấy hoặc dùng nhầm tồn của chủ khác.",
+                "Kiểm tra menu sau khi đăng nhập bằng tài khoản đó: chỉ thấy nhóm chức năng phù hợp.",
+                "Khi nhân sự nghỉ hoặc đổi ca, khóa tài khoản hoặc thu hồi thiết bị tin cậy."
+            },
+            CommonErrors = new[]
+            {
+                "Nhân viên không thấy nhiệm vụ: thiếu kho, thiếu vùng hoặc nhiệm vụ chưa được gán.",
+                "Người dùng thấy quá nhiều menu: vai trò đang cao hơn nhu cầu thực tế.",
+                "Quản lý không duyệt được: thiếu policy nghiệp vụ hoặc tài khoản không thuộc kho liên quan."
+            },
+            ExpectedResult = "Mỗi người chỉ thấy và thao tác đúng phạm vi công việc, không lộ nút quản trị cho vai trò vận hành.",
+            SafetyNote = "Không cấp vai trò Quản trị viên chỉ để giải quyết một lỗi thao tác; hãy sửa đúng quyền hoặc đúng dữ liệu nền."
+        },
+        new
+        {
+            Key = "nhap-kho",
+            Title = "Nhập kho",
+            Icon = "fa-truck-loading",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên kho tổng hợp", "Nhân viên nhập kho" },
+            Purpose = "Ghi nhận hàng vào kho đúng phiếu, đúng vật tư, đúng lô, hạn dùng, số sê-ri, mã kiện và vị trí cất hàng.",
+            Screen = "Nhập kho -> Tạo phiếu nhập, Duyệt phiếu nhập, Tiếp nhận hàng, Quét nhận hàng, Kiểm tra chất lượng, Lịch sử nhập kho; hoặc mở Chi tiết phiếu.",
+            Prerequisites = new[]
+            {
+                "Kho, đối tác, vật tư và đơn vị tính đã được khai báo.",
+                "Vật tư có cấu hình theo lô, hạn dùng, số sê-ri hoặc cân thực tế nếu nghiệp vụ yêu cầu.",
+                "Vị trí cất hàng đang hoạt động trong đúng kho.",
+                "Người thao tác có quyền tạo, duyệt hoặc tiếp nhận theo vai trò."
+            },
+            Steps = new[]
+            {
+                "Tạo phiếu nhập, chọn kho, đối tác và loại phiếu phù hợp.",
+                "Thêm từng dòng vật tư, số lượng, đơn vị tính, lô, hạn dùng và ghi chú nếu có.",
+                "Tải danh sách từ Excel khi có nhiều dòng; chỉ dùng file mẫu chuẩn để tránh sai cột.",
+                "Duyệt phiếu nhập để cho phép tiếp nhận thực tế.",
+                "Tại màn tiếp nhận, lọc theo kho, trạng thái, lịch nhận hàng, cửa nhận hàng hoặc xe.",
+                "Nhân viên ghi nhận số lượng thực nhận, số sê-ri và cân thực tế nếu mặt hàng yêu cầu.",
+                "Chọn vị trí cất hàng hoặc tạo mã kiện khi nhập theo container/pallet/thùng.",
+                "Hoàn tất nhập khi toàn bộ dữ liệu bắt buộc đã hợp lệ; chỉ bước hoàn tất thành công mới cộng tồn và ghi sổ giao dịch."
+            },
+            CommonErrors = new[]
+            {
+                "Thiếu lô hoặc hạn dùng: bổ sung trên dòng phiếu trước khi hoàn tất.",
+                "Thiếu số sê-ri: mở màn nhận số sê-ri và nhập đủ số lượng nguyên.",
+                "Thiếu vị trí cất hàng: chọn vị trí cùng kho, còn hoạt động.",
+                "Thiếu cân thực tế: ghi nhận trọng lượng đúng đơn vị và trong dung sai.",
+                "Hàng lỗi hoặc kiểm phẩm chưa đạt: xử lý kiểm tra chất lượng trước khi cộng tồn tốt."
+            },
+            ExpectedResult = "Phiếu nhập hoàn tất, tồn vị trí tăng đúng, mã kiện và số sê-ri được gắn đúng kho/vị trí, sổ giao dịch tồn kho có dòng nhận hàng.",
+            SafetyNote = "Tạo phiếu nhập không làm tăng tồn ngay; tồn chỉ tăng khi phiếu hoàn tất hợp lệ."
+        },
+        new
+        {
+            Key = "xuat-kho",
+            Title = "Xuất kho",
+            Icon = "fa-truck-ramp-box",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên kho tổng hợp", "Nhân viên xuất kho" },
+            Purpose = "Xuất hàng theo đúng phiếu, đúng chủ hàng, đúng lô, đúng vị trí, đúng số sê-ri, có đóng gói và bàn giao đầy đủ.",
+            Screen = "Xuất kho -> Tạo phiếu xuất, Đợt gom đơn, Nhiệm vụ lấy hàng, Quét lấy hàng, Nhiệm vụ tiếp theo, Đóng gói & giao.",
+            Prerequisites = new[]
+            {
+                "Phiếu xuất đã có dòng vật tư và kho xuất.",
+                "Tồn khả dụng đủ theo chủ hàng, kho, lô, hạn dùng và trạng thái giữ hàng.",
+                "Nếu hàng quản lý số sê-ri, số sê-ri phải đang khả dụng và có thể giữ chỗ.",
+                "Nếu giao qua vận đơn hoặc chuyến xe, cấu hình vận chuyển cần sẵn sàng."
+            },
+            Steps = new[]
+            {
+                "Tạo phiếu xuất, chọn kho, đối tác nhận hàng, loại xuất và dòng vật tư.",
+                "Phát hành phiếu để hệ thống giữ chỗ tồn và tạo nhiệm vụ lấy hàng.",
+                "Nếu dùng đợt gom đơn, tạo đợt lấy hàng và phân bổ nhiệm vụ theo khu vực.",
+                "Nhân viên dùng điện thoại để quét đúng vị trí nguồn, mã hàng, mã kiện hoặc số sê-ri.",
+                "Xử lý lấy thiếu ngay trên nhiệm vụ nếu không đủ hàng tại vị trí.",
+                "Người có quyền ghi sổ xuất chốt phần đã lấy; nếu quy tắc tách nhiệm vụ được bật, người lập phiếu phải chuyển cho người khác thực hiện bước này.",
+                "Đóng gói thành kiện xuất, gắn mã kiện, cân thực tế nếu bắt buộc.",
+                "Tạo vận đơn hoặc xếp kiện lên chuyến xe trước khi giao nếu quy tắc vận chuyển yêu cầu.",
+                "Xác nhận giao hàng hoặc cho chuyến rời kho."
+            },
+            CommonErrors = new[]
+            {
+                "Không phát hành được: thiếu tồn khả dụng hoặc sai chủ hàng.",
+                "Quét sai số sê-ri: chỉ được quét số sê-ri đã được giữ chỗ cho nhiệm vụ.",
+                "Lấy thiếu chưa xử lý: giải phóng hoặc phân bổ lại giữ chỗ trước khi ghi sổ.",
+                "Không giao được: thiếu kiện xuất, thiếu cân thực tế, thiếu vận đơn hoặc phiếu đang nằm trong chuyến đang hoạt động."
+            },
+            ExpectedResult = "Phiếu xuất đi hết vòng đời: giữ chỗ, lấy hàng, ghi sổ xuất, đóng gói, giao hàng; tồn giảm đúng và có truy vết đầy đủ.",
+            SafetyNote = "Không bỏ qua bước giữ chỗ/lấy hàng để giao trực tiếp nếu vật tư có số sê-ri, mã kiện hoặc kiểm soát chủ hàng."
+        },
+        new
+        {
+            Key = "ton-kho",
+            Title = "Tồn kho",
+            Icon = "fa-boxes-stacked",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên kho tổng hợp", "Nhân viên tồn kho/kiểm kê", "Nhân viên báo cáo", "Chỉ xem" },
+            Purpose = "Tra cứu số lượng tồn, giá trị tồn, vị trí lưu trữ, lịch sử nhập xuất, thống kê nhập/xuất theo kỳ và các cảnh báo tồn kho.",
+            Screen = "Tồn kho -> Xem tồn kho, Sơ đồ kho, Tra cứu mã kiện, Tra cứu số sê-ri, Kiểm kê, Kiểm kê thông minh, Điều chỉnh tồn kho, Nhiệm vụ di chuyển, Hàng sắp thiếu, Hàng chậm, Lịch sử nhập xuất; Hệ thống -> Chốt tồn, Khóa kỳ.",
+            Prerequisites = new[]
+            {
+                "Dữ liệu tồn được cập nhật từ phiếu nhập, xuất, di chuyển, điều chỉnh hoặc đối soát.",
+                "Người dùng được gán đúng kho hoặc có quyền xem toàn hệ thống.",
+                "Nếu dùng nhiều chủ hàng, cần chọn hoặc được cấp đúng phạm vi chủ hàng."
+            },
+            Steps = new[]
+            {
+                "Mở màn xem tồn kho, lọc theo kho, vật tư, vị trí, lô hoặc hạn dùng.",
+                "Dùng sơ đồ kho để kiểm tra vị trí trống, vị trí đang có hàng và khu vực bất thường.",
+                "Mở lịch sử nhập xuất để xem biến động theo phiếu, lô, HSD và vị trí.",
+                "Mở thống kê nhập/xuất theo kỳ khi cần tổng hợp mọi mặt hàng nhập/xuất trong khoảng ngày bắt buộc.",
+                "Từ lịch sử nhập xuất hoặc màn chi tiết liên quan, truy vết giao dịch theo loại: nhận, di chuyển, lấy, giao, điều chỉnh và đối soát.",
+                "Kiểm tra cảnh báo hàng sắp thiếu, hàng sắp hết hạn và tồn đang giữ."
+            },
+            CommonErrors = new[]
+            {
+                "Không thấy tồn vừa nhập: phiếu chưa hoàn tất hoặc đối soát ảnh chụp tồn chưa chạy.",
+                "Tồn khả dụng thấp hơn tồn thực tế: một phần đang được giữ chỗ hoặc bị giữ chất lượng.",
+                "Không thấy tồn của chủ hàng khác: tài khoản đang bị giới hạn phạm vi chủ hàng."
+            },
+            ExpectedResult = "Người dùng đọc được tồn theo kho/vị trí/lô/hạn dùng và đối chiếu được với sổ giao dịch.",
+            SafetyNote = "Không sửa tồn bằng điều chỉnh nhanh khi lỗi gốc là phiếu, mã kiện hoặc số sê-ri chưa hoàn tất."
+        },
+        new
+        {
+            Key = "kiem-ke-thong-minh",
+            Title = "Kiểm kê thông minh và đề xuất từ AI",
+            Icon = "fa-chart-line",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên kho tổng hợp", "Nhân viên tồn kho/kiểm kê" },
+            Purpose = "Ưu tiên vị trí có rủi ro sai lệch cao để lập kế hoạch kiểm kê chu kỳ, đồng thời giữ con người phê duyệt mọi quyết định có thể dẫn đến điều chỉnh tồn.",
+            Screen = "Tồn kho -> Kiểm kê thông minh; từ danh sách rủi ro mở hàng đợi đề xuất kiểm kê và phiếu kiểm kê liên quan.",
+            Prerequisites = new[]
+            {
+                "Tài khoản có quyền tồn kho/kiểm kê trong đúng kho và phạm vi chủ hàng.",
+                "Dữ liệu tồn, giao dịch, giữ chỗ và kiểm kê nguồn không có lỗi chất lượng dữ liệu chặn xử lý.",
+                "Đọc rõ phiên bản phương pháp chấm điểm, thời điểm dữ liệu và trạng thái baseline/model trước khi ra quyết định."
+            },
+            Steps = new[]
+            {
+                "Chọn kho, chủ hàng, khu vực và mức rủi ro; kiểm tra thời điểm dữ liệu ở đầu màn hình.",
+                "Mở từng dòng để xem yếu tố giải thích, giao dịch nguồn và cảnh báo chất lượng dữ liệu; điểm rủi ro không mặc nhiên là xác suất sai lệch.",
+                "Quản lý tạo hoặc rà soát đề xuất, sau đó duyệt, sửa phạm vi hoặc từ chối kèm lý do.",
+                "Chỉ đề xuất đã duyệt mới được tạo phiếu kiểm kê; hệ thống phải chặn phiếu kiểm kê đang hoạt động trùng cùng phạm vi.",
+                "Nhân viên tồn kho thực hiện đếm kín khi policy yêu cầu, nhập số lượng đếm và gửi chênh lệch cho quản lý.",
+                "Quản lý đối chiếu chênh lệch, nguyên nhân và bằng chứng; chỉ workflow kiểm kê/điều chỉnh đã duyệt mới được làm đổi tồn.",
+                "Nếu AI thiếu dữ liệu, quá cũ hoặc bị chặn, dùng kế hoạch ABC/quy tắc dự phòng và ghi rõ nguồn đề xuất."
+            },
+            CommonErrors = new[]
+            {
+                "Không có đề xuất: dữ liệu lịch sử chưa đủ hoặc chưa có batch chấm điểm hợp lệ; tiếp tục kiểm kê theo lịch/ABC.",
+                "Dòng bị chặn chất lượng dữ liệu: xử lý lệch tồn, phạm vi chủ hàng hoặc giao dịch nguồn trước khi tạo phiếu.",
+                "Đề xuất hết hạn hoặc số dư đã đổi: chạy chấm điểm lại, không duyệt dữ liệu cũ.",
+                "Không tạo được phiếu: đã có kiểm kê đang hoạt động cùng kho-vị trí-vật tư-lô."
+            },
+            ExpectedResult = "Danh sách kiểm kê có nguồn, thời điểm, lý do, người duyệt và liên kết phiếu rõ ràng; kết quả đếm quay lại phục vụ đánh giá nhưng không ghi đè dự đoán cũ.",
+            SafetyNote = "AI chỉ xếp hạng và đề xuất. Không cho AI tự ghi sổ, tự điều chỉnh tồn, tự duyệt chênh lệch hoặc bỏ qua quyền kho/chủ hàng."
+        },
+        new
+        {
+            Key = "ma-kien",
+            Title = "Mã kiện",
+            Icon = "fa-qrcode",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Quản lý pallet, thùng, tote hoặc kiện hàng như một vật chứa độc lập, có thể chứa nhiều vật tư và mã kiện con.",
+            Screen = "Tồn kho -> Tra cứu mã kiện, Nhập kho, Đóng gói & giao, Quét di chuyển.",
+            Prerequisites = new[]
+            {
+                "Vật tư hoặc phiếu đã phát sinh mã kiện.",
+                "Mã kiện còn hoạt động và thuộc đúng kho/chủ hàng.",
+                "Nếu là mã kiện lồng nhau, quan hệ cha/con không được tạo vòng lặp."
+            },
+            Steps = new[]
+            {
+                "Tạo hoặc nhận mã kiện trong luồng nhập kho/đóng gói.",
+                "Gắn chi tiết vật tư, số lượng, lô, hạn dùng và trạng thái giữ hàng vào mã kiện.",
+                "Tra cứu mã kiện để xem tổng số lượng, số mã hàng khác nhau và vị trí hiện tại.",
+                "Di chuyển mã kiện bằng thao tác quét mã kiện, vị trí nguồn và vị trí đích.",
+                "Khi di chuyển mã kiện cha, kiểm tra toàn bộ mã kiện con và chi tiết bên dưới."
+            },
+            CommonErrors = new[]
+            {
+                "Mã kiện không tìm thấy: kiểm tra mã, kho và trạng thái đã hủy/giao.",
+                "Không di chuyển được: mã kiện chứa số sê-ri đang giữ chỗ hoặc đang lấy hàng.",
+                "Chi tiết mã kiện không khớp tồn: chạy đối soát hoặc kiểm tra giao dịch gần nhất."
+            },
+            ExpectedResult = "Mã kiện thể hiện đúng vật chứa, vị trí hiện tại, chi tiết hàng bên trong và lịch sử thao tác.",
+            SafetyNote = "Không di chuyển lẻ số lượng bên trong mã kiện khi nghiệp vụ yêu cầu di chuyển nguyên mã kiện."
+        },
+        new
+        {
+            Key = "so-se-ri",
+            Title = "Số sê-ri",
+            Icon = "fa-fingerprint",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Theo dõi từng đơn vị hàng có số sê-ri từ lúc nhận, giữ chỗ, lấy hàng đến lúc giao hoặc chuyển kho.",
+            Screen = "Nhập kho -> Nhận số sê-ri, Tồn kho -> Tra cứu số sê-ri, Xuất kho -> Quét lấy hàng bằng điện thoại.",
+            Prerequisites = new[]
+            {
+                "Vật tư đã bật quản lý số sê-ri.",
+                "Số lượng nhận/xuất là số nguyên theo đơn vị gốc.",
+                "Số sê-ri không trùng và thuộc đúng vật tư/kho/chủ hàng."
+            },
+            Steps = new[]
+            {
+                "Khi nhập hàng, mở màn nhận số sê-ri cho từng dòng vật tư yêu cầu.",
+                "Quét hoặc nhập đủ số sê-ri trước khi hoàn tất phiếu nhập.",
+                "Khi phát hành xuất, hệ thống giữ chỗ số sê-ri phù hợp.",
+                "Khi lấy hàng, nhân viên chỉ được quét đúng số sê-ri đã giữ chỗ cho nhiệm vụ.",
+                "Khi giao hàng, số sê-ri chuyển sang trạng thái đã xuất; nếu chuyển kho thì quay về khả dụng tại kho đích."
+            },
+            CommonErrors = new[]
+            {
+                "Thiếu số sê-ri nhập: nhập thêm đúng số lượng còn thiếu.",
+                "Quét sai số sê-ri khi lấy: kiểm tra danh sách giữ chỗ của nhiệm vụ.",
+                "Số sê-ri đã dùng: không thể nhận hoặc xuất lại nếu chưa hủy đúng nghiệp vụ."
+            },
+            ExpectedResult = "Mỗi số sê-ri có trạng thái, vị trí, mã kiện và tham chiếu phiếu rõ ràng.",
+            SafetyNote = "Không thay số sê-ri bằng ghi chú tự do; số sê-ri là đơn vị tồn kho độc lập."
+        },
+        new
+        {
+            Key = "can-thuc-te",
+            Title = "Cân trọng lượng thực tế",
+            Icon = "fa-weight-scale",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Ghi nhận trọng lượng thật cho vật tư yêu cầu cân, thường dùng cho hàng thực phẩm, lạnh hoặc hàng tính tiền theo cân.",
+            Screen = "Nhập kho, Đóng gói & giao, màn ghi nhận cân thực tế liên quan đến phiếu hoặc kiện.",
+            Prerequisites = new[]
+            {
+                "Vật tư đã bật yêu cầu cân trọng lượng thực tế.",
+                "Có đơn vị cân, trọng lượng danh nghĩa và dung sai nếu nghiệp vụ yêu cầu.",
+                "Số lượng gốc đã được nhập hoặc đóng gói."
+            },
+            Steps = new[]
+            {
+                "Tại nhập kho, ghi trọng lượng thực tế cho dòng vật tư yêu cầu trước khi hoàn tất.",
+                "Tại đóng gói, ghi trọng lượng thực tế theo kiện nếu vật tư trong kiện yêu cầu.",
+                "Kiểm tra dung sai so với trọng lượng danh nghĩa.",
+                "Nếu cân ngoài dung sai, xử lý theo ngoại lệ hoặc kiểm tra lại dữ liệu cân."
+            },
+            CommonErrors = new[]
+            {
+                "Thiếu cân thực tế: phiếu hoặc kiện bị chặn hoàn tất/giao.",
+                "Cân ngoài dung sai: kiểm tra cân, đơn vị đo hoặc số lượng gốc.",
+                "Ghi sai đơn vị cân: sửa lại trước khi chốt nghiệp vụ."
+            },
+            ExpectedResult = "Bảng cân thực tế có dòng ghi nhận liên kết đúng phiếu, kiện, mã kiện hoặc số sê-ri nếu có.",
+            SafetyNote = "Cân thực tế là dữ liệu đo lường, không thay thế số lượng tồn kho theo đơn vị gốc."
+        },
+        new
+        {
+            Key = "quet-dien-thoai",
+            Title = "Quét mã bằng điện thoại",
+            Icon = "fa-mobile-screen",
+            Roles = new[] { "Nhân viên kho" },
+            Purpose = "Cho phép nhân viên dùng điện thoại mở web để quét mã vạch hoặc mã phản hồi nhanh thay cho thiết bị cầm tay chuyên dụng ở giai đoạn đầu.",
+            Screen = "Quét nhận hàng bằng điện thoại, Quét lấy hàng bằng điện thoại, Quét di chuyển, Nhiệm vụ tiếp theo, Tra cứu mã kiện, Tra cứu số sê-ri.",
+            Prerequisites = new[]
+            {
+                "Điện thoại có camera hoạt động.",
+                "Trang được mở bằng địa chỉ bảo mật để trình duyệt cho phép camera.",
+                "Người dùng đã đăng nhập và có quyền thao tác vận hành."
+            },
+            Steps = new[]
+            {
+                "Mở màn cần thao tác trên điện thoại.",
+                "Bấm nút camera cạnh ô nhập mã.",
+                "Cho phép trình duyệt dùng camera nếu được hỏi.",
+                "Đưa mã vào giữa khung hình, giữ khoảng cách ổn định.",
+                "Sau khi mã tự điền, kiểm tra lại thông tin hiển thị rồi bấm nút nghiệp vụ.",
+                "Nếu camera không đọc được, nhập mã thủ công vào ô quét."
+            },
+            CommonErrors = new[]
+            {
+                "Không mở được camera: kiểm tra quyền trình duyệt và địa chỉ bảo mật.",
+                "Quét sai mã: xóa ô nhập và quét lại; không bấm xác nhận khi chưa kiểm tra.",
+                "Mã bị mờ hoặc phản sáng: đổi góc điện thoại hoặc nhập thủ công."
+            },
+            ExpectedResult = "Mã được điền đúng vào ô nghiệp vụ và người dùng hoàn tất thao tác không cần thiết bị cầm tay riêng.",
+            SafetyNote = "Không tự xác nhận nếu màn yêu cầu người dùng bấm nút nghiệp vụ; luôn kiểm tra mã trước khi gửi."
+        },
+        new
+        {
+            Key = "hang-doi-quet",
+            Title = "Hàng đợi quét khi mạng yếu",
+            Icon = "fa-cloud-arrow-up",
+            Roles = new[] { "Nhân viên kho", "Quản lý kho" },
+            Purpose = "Giữ tạm thao tác quét ngắn khi mạng chập chờn, gửi lại khi có mạng và tránh nhân đôi nghiệp vụ.",
+            Screen = "Nút Hàng đợi quét ở góc màn hình trên các trang vận hành.",
+            Prerequisites = new[]
+            {
+                "Chỉ dùng cho form đã được phép xếp hàng đợi.",
+                "Phiên đăng nhập và mã chống giả mạo yêu cầu vẫn còn hiệu lực.",
+                "Không dùng cho nghiệp vụ lớn như hoàn tất nhập, ghi sổ xuất hoặc rời chuyến."
+            },
+            Steps = new[]
+            {
+                "Thao tác quét như bình thường trên màn được hỗ trợ.",
+                "Nếu mất mạng, hệ thống lưu thao tác vào hàng đợi trình duyệt.",
+                "Khi mạng trở lại, hàng đợi tự gửi lại hoặc người dùng bấm Gửi lại.",
+                "Mở panel hàng đợi để xem trạng thái: chờ gửi, đang gửi, đã gửi, lỗi mạng hoặc cần xử lý.",
+                "Nếu lỗi nghiệp vụ, đọc lý do và xử lý dữ liệu gốc thay vì gửi lại vô hạn."
+            },
+            CommonErrors = new[]
+            {
+                "Cần đăng nhập lại: phiên đã hết hạn, thao tác không tự gửi tiếp.",
+                "Lỗi nghiệp vụ: sai vị trí, sai số sê-ri hoặc nhiệm vụ đã đóng.",
+                "Người dùng bỏ thao tác khỏi hàng đợi: cần kiểm tra nghiệp vụ đã được xử lý hay chưa."
+            },
+            ExpectedResult = "Mất mạng ngắn hạn không làm mất thao tác quét và gửi lại không nhân đôi tồn, số sê-ri, mã kiện hoặc kiện xuất.",
+            SafetyNote = "Hàng đợi quét không biến hệ thống thành ứng dụng ngoại tuyến đầy đủ; chỉ dùng cho thao tác ngắn."
+        },
+        new
+        {
+            Key = "bo-sung-hang",
+            Title = "Bổ sung hàng",
+            Icon = "fa-arrows-left-right-to-line",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Đưa hàng từ khu lưu trữ về khu lấy hàng để bảo đảm nhiệm vụ lấy hàng không bị thiếu tại mặt lấy.",
+            Screen = "Tồn kho -> Bổ sung hàng, Tồn kho -> Nhiệm vụ di chuyển.",
+            Prerequisites = new[]
+            {
+                "Vật tư có ngưỡng tối thiểu hoặc có nhu cầu từ đợt lấy hàng.",
+                "Nguồn bổ sung còn tồn khả dụng.",
+                "Vị trí đích thuộc khu lấy hàng và còn sức chứa."
+            },
+            Steps = new[]
+            {
+                "Mở danh sách đề xuất bổ sung hàng.",
+                "Kiểm tra vật tư, vị trí nguồn, vị trí đích và số lượng đề xuất.",
+                "Tạo nhiệm vụ di chuyển bổ sung cho nhân viên phù hợp.",
+                "Nhân viên quét vị trí nguồn, mã kiện hoặc vật tư, rồi quét vị trí đích.",
+                "Xác nhận hoàn tất để tồn chuyển sang vị trí đích."
+            },
+            CommonErrors = new[]
+            {
+                "Không đủ tồn nguồn: chọn nguồn khác hoặc giảm số lượng.",
+                "Vị trí đích không hợp lệ: kiểm tra khu vực và sức chứa.",
+                "Nguồn có mã kiện hoạt động: tạo nhiệm vụ di chuyển nguyên mã kiện nếu cần."
+            },
+            ExpectedResult = "Khu lấy hàng có đủ hàng để đáp ứng nhiệm vụ xuất, giảm tình trạng lấy thiếu.",
+            SafetyNote = "Không bổ sung hàng vào vị trí sai khu vực chỉ để xử lý nhanh; việc này làm tăng thời gian tìm hàng."
+        },
+        new
+        {
+            Key = "di-chuyen-ton",
+            Title = "Di chuyển tồn",
+            Icon = "fa-right-left",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Di chuyển vật tư hoặc mã kiện giữa các vị trí trong cùng kho một cách có kiểm soát và có truy vết.",
+            Screen = "Tồn kho -> Nhiệm vụ di chuyển, Tồn kho -> Quét di chuyển.",
+            Prerequisites = new[]
+            {
+                "Nhiệm vụ di chuyển đã được tạo hoặc người dùng có quyền tạo nhiệm vụ.",
+                "Vị trí nguồn có tồn phù hợp.",
+                "Vị trí đích cùng kho và đang hoạt động."
+            },
+            Steps = new[]
+            {
+                "Mở nhiệm vụ di chuyển cần xử lý.",
+                "Nếu là mã kiện, quét đúng mã kiện và không nhập số lượng lẻ.",
+                "Quét vị trí nguồn để xác nhận lấy đúng nơi.",
+                "Quét vị trí đích để xác nhận thả đúng nơi.",
+                "Xác nhận hoàn tất; hệ thống cập nhật tồn nguồn, tồn đích và mã kiện nếu có."
+            },
+            CommonErrors = new[]
+            {
+                "Sai vị trí nguồn: kiểm tra lại nhiệm vụ và nhãn vị trí.",
+                "Không thể di chuyển mã kiện: mã kiện chứa hàng đang giữ chỗ hoặc đang lấy.",
+                "Tồn nguồn không đủ: chạy đối soát hoặc kiểm tra giao dịch gần nhất."
+            },
+            ExpectedResult = "Tồn hoặc mã kiện chuyển đúng vị trí, sổ giao dịch ghi đủ dòng giảm nguồn và tăng đích.",
+            SafetyNote = "Di chuyển thực tế ngoài hệ thống trước rồi cập nhật sau dễ gây lệch tồn; hãy quét trong lúc thao tác."
+        },
+        new
+        {
+            Key = "kiem-tra-chat-luong",
+            Title = "Kiểm tra chất lượng",
+            Icon = "fa-microscope",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Ghi nhận kết quả kiểm phẩm cho phiếu nhập hoặc luồng cần kiểm tra trước khi hàng được đưa vào tồn tốt.",
+            Screen = "Nhập kho -> Kiểm tra chất lượng.",
+            Prerequisites = new[]
+            {
+                "Phiếu nhập đang ở trạng thái cần kiểm tra.",
+                "Đã xác định tỷ lệ mẫu, số lượng đạt, số lượng lỗi và hướng xử lý.",
+                "Người thao tác có quyền kiểm tra hoặc ghi nhận kết quả."
+            },
+            Steps = new[]
+            {
+                "Mở màn kiểm tra chất lượng và chọn phiếu cần kiểm.",
+                "Nhập tổng số lượng, số lượng mẫu kiểm, số lượng đạt và số lượng lỗi.",
+                "Ghi mô tả lỗi nếu có hàng không đạt.",
+                "Chọn hướng xử lý: chấp nhận, giữ lại, loại bỏ hoặc xử lý theo quy trình kho.",
+                "Lưu kết quả và quay lại phiếu để hoàn tất các bước tiếp theo."
+            },
+            CommonErrors = new[]
+            {
+                "Số lượng mẫu vượt tổng số lượng: sửa lại số lượng kiểm.",
+                "Số đạt cộng số lỗi không bằng số mẫu: kiểm lại dữ liệu nhập.",
+                "Không hoàn tất nhập được: còn kết quả kiểm phẩm chưa xử lý."
+            },
+            ExpectedResult = "Phiếu có kết quả kiểm phẩm rõ ràng, hàng đạt được phép tiếp tục nhập, hàng lỗi được giữ hoặc xử lý theo quy tắc.",
+            SafetyNote = "Không ghi đạt toàn bộ nếu chưa kiểm thực tế; kết quả kiểm phẩm ảnh hưởng trực tiếp đến chất lượng tồn kho."
+        },
+        new
+        {
+            Key = "bai-do",
+            Title = "Bãi đỗ",
+            Icon = "fa-warehouse",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Theo dõi xe, rơ-moóc, công-ten-nơ, vị trí bãi, cửa bến và thời gian lưu bãi trong vận hành yard.",
+            Screen = "Nhập kho -> Quản lý bãi đỗ, Bảng điều phối cửa bến, Đối soát phí bãi.",
+            Prerequisites = new[]
+            {
+                "Kho đã khai báo vị trí bãi nếu cần gán xe vào vị trí.",
+                "Xe hoặc công-ten-nơ có số nhận diện rõ ràng.",
+                "Nếu liên kết phiếu, phiếu phải thuộc đúng kho."
+            },
+            Steps = new[]
+            {
+                "Tạo vị trí bãi nếu kho chưa có vị trí phù hợp.",
+                "Ghi nhận xe hoặc công-ten-nơ vào bãi, nhập số xe, đơn vị vận chuyển, tài xế và mục đích.",
+                "Gán vị trí bãi trống nếu có.",
+                "Theo dõi trạng thái đang trong bãi, tại cửa bến, đã rời bãi hoặc đã hủy.",
+                "Khi xe rời kho, ghi nhận ra cổng để chốt thời gian lưu bãi."
+            },
+            CommonErrors = new[]
+            {
+                "Vị trí bãi đã có xe: chọn vị trí trống khác.",
+                "Xe đã có lượt vào bãi đang hoạt động: không tạo trùng lượt.",
+                "Không tính được phí bãi: kiểm tra giờ vào, giờ ra và bảng giá."
+            },
+            ExpectedResult = "Xe/công-ten-nơ có trạng thái bãi rõ ràng, thời gian lưu bãi và liên kết phiếu/cửa bến nếu có.",
+            SafetyNote = "Không dùng vị trí bãi như vị trí tồn kho; đây là vị trí xe, không phải vị trí lưu vật tư."
+        },
+        new
+        {
+            Key = "chuyen-xe",
+            Title = "Chuyến xe",
+            Icon = "fa-truck-fast",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Gom nhiều phiếu hoặc kiện xuất vào một chuyến giao để kiểm soát xếp hàng, rời kho và bàn giao.",
+            Screen = "Xuất kho -> Bảng chuyến xe, Chi tiết chuyến xe.",
+            Prerequisites = new[]
+            {
+                "Phiếu xuất đã ghi sổ và đóng gói.",
+                "Kiện xuất đã sẵn sàng để quét lên chuyến.",
+                "Thông tin xe, tuyến, đơn vị vận chuyển hoặc bản kê đã được chuẩn bị nếu cần."
+            },
+            Steps = new[]
+            {
+                "Tạo chuyến xe với kho, mã chuyến, tuyến, xe, đơn vị vận chuyển và thời gian dự kiến.",
+                "Thêm các phiếu xuất đủ điều kiện vào chuyến.",
+                "Quét từng kiện hoặc mã kiện lên chuyến.",
+                "Kiểm tra đủ kiện, cân thực tế và vận đơn nếu quy tắc yêu cầu.",
+                "In bản kê chuyến xe và biên bản bàn giao nếu cần.",
+                "Cho chuyến xe rời kho và đóng chuyến sau khi hoàn tất."
+            },
+            CommonErrors = new[]
+            {
+                "Không thêm được phiếu: phiếu khác kho, chưa đóng gói, đã giao hoặc đã nằm trong chuyến khác.",
+                "Không rời chuyến được: còn kiện chưa quét hoặc thiếu cân thực tế.",
+                "Kiện lệch chuyến: mở đối soát giao hàng để kiểm tra."
+            },
+            ExpectedResult = "Chuyến xe có danh sách phiếu, kiện, trạng thái xếp hàng và nhật ký bàn giao đầy đủ.",
+            SafetyNote = "Không xác nhận rời kho khi còn kiện chưa quét lên chuyến."
+        },
+        new
+        {
+            Key = "van-don",
+            Title = "Vận đơn và bộ kết nối vận tải",
+            Icon = "fa-plug-circle-bolt",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Tạo vận đơn theo kiện xuất, gửi yêu cầu ra đơn vị vận chuyển qua hàng đợi tích hợp và theo dõi trạng thái giao hàng.",
+            Screen = "Xuất kho -> Cấu hình vận chuyển, Xuất kho -> Điều phối vận chuyển, Đóng gói & giao.",
+            Prerequisites = new[]
+            {
+                "Có cấu hình đơn vị vận chuyển đang hoạt động cho kho.",
+                "Phiếu đã đóng gói và có kiện xuất.",
+                "Nếu cấu hình yêu cầu vận đơn trước giao, tất cả kiện phải có vận đơn hợp lệ."
+            },
+            Steps = new[]
+            {
+                "Quản trị viên hoặc quản lý tạo cấu hình đơn vị vận chuyển cho kho.",
+                "Chọn kiểu kết nối giả lập nội bộ hoặc qua hàng đợi tích hợp.",
+                "Mở bảng điều phối vận chuyển để tạo vận đơn cho từng kiện.",
+                "Theo dõi trạng thái chờ gửi, đã tạo, lỗi, đã hủy, đã giao hoặc giao thất bại.",
+                "Khi lỗi gửi, bấm gửi lại hoặc đồng bộ trạng thái.",
+                "Khi cần hủy, hủy vận đơn trước khi xác nhận giao theo quy tắc kho."
+            },
+            CommonErrors = new[]
+            {
+                "Chưa có cấu hình đơn vị vận chuyển: tạo cấu hình trước.",
+                "Phiếu chưa đóng gói: đóng gói và tạo kiện trước khi tạo vận đơn.",
+                "Vận đơn lỗi: xem lỗi gần nhất và gửi lại sau khi xử lý cấu hình hoặc dữ liệu kiện."
+            },
+            ExpectedResult = "Kiện xuất có mã vận đơn, trạng thái vận chuyển và lịch sử gửi/đồng bộ rõ ràng.",
+            SafetyNote = "Trạng thái hãng vận chuyển không tự thay thế xác nhận giao hàng trong WMS; thao tác giao vẫn do người có quyền xác nhận."
+        },
+        new
+        {
+            Key = "doi-soat-giao-hang",
+            Title = "Đối soát giao hàng",
+            Icon = "fa-clipboard-check",
+            Roles = new[] { "Quản lý kho" },
+            Purpose = "Phát hiện lệch giữa phiếu xuất, kiện xuất, chuyến xe, vận đơn và nhật ký bàn giao trước khi chốt vận hành.",
+            Screen = "Xuất kho -> Đối soát giao hàng.",
+            Prerequisites = new[]
+            {
+                "Có phiếu xuất, kiện, chuyến xe hoặc vận đơn trong kỳ cần kiểm tra.",
+                "Người dùng có quyền xem dữ liệu kho liên quan.",
+                "Bộ lọc kho, mức độ và loại lệch được chọn phù hợp."
+            },
+            Steps = new[]
+            {
+                "Mở màn đối soát giao hàng.",
+                "Lọc theo kho, mức độ, loại lệch hoặc từ khóa.",
+                "Đọc từng dòng: phiếu, kiện, chuyến, vận đơn, tóm tắt và khuyến nghị.",
+                "Mở màn xử lý theo đường dẫn được gợi ý.",
+                "Sau khi sửa dữ liệu gốc, quay lại đối soát để kiểm tra còn lệch hay không.",
+                "Xuất Excel nếu cần bàn giao danh sách xử lý."
+            },
+            CommonErrors = new[]
+            {
+                "Phiếu đã giao nhưng thiếu vận đơn.",
+                "Kiện chưa quét lên chuyến.",
+                "Chuyến đã rời kho nhưng còn kiện chưa xếp.",
+                "Hãng báo giao thất bại nhưng phiếu đã giao."
+            },
+            ExpectedResult = "Mọi lệch giao hàng quan trọng được liệt kê thành danh sách xử lý, không phải dò tay.",
+            SafetyNote = "Đối soát chỉ cảnh báo; không tự sửa phiếu, kiện, chuyến hoặc vận đơn."
+        },
+        new
+        {
+            Key = "trung-tam-ngoai-le",
+            Title = "Trung tâm ngoại lệ",
+            Icon = "fa-triangle-exclamation",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Gom các lỗi nghiệp vụ cần xử lý có phân công, ghi nhận và đóng ngoại lệ.",
+            Screen = "Báo cáo -> Bất thường hoặc các nút Xem bất thường trên màn vận hành.",
+            Prerequisites = new[]
+            {
+                "Hệ thống đã phát hiện lỗi nền từ nhập, xuất, giao hàng, bãi đỗ hoặc đối soát.",
+                "Người quản lý có quyền phân công hoặc đóng ngoại lệ.",
+                "Người xử lý hiểu tham chiếu phiếu/nhiệm vụ/kiện/chuyến trong từng dòng."
+            },
+            Steps = new[]
+            {
+                "Mở trung tâm ngoại lệ và lọc theo kho, mức độ, nhóm nghiệp vụ hoặc từ khóa.",
+                "Đọc tham chiếu chính: phiếu, nhiệm vụ, mã kiện, kiện xuất hoặc chuyến xe.",
+                "Phân công người xử lý nếu lỗi cần theo dõi.",
+                "Ghi nhận quá trình xử lý bằng ghi chú.",
+                "Sửa dữ liệu gốc tại màn nghiệp vụ liên quan.",
+                "Đóng ngoại lệ khi nguyên nhân đã được xử lý.",
+                "Nếu lỗi nền vẫn còn, hệ thống có thể mở lại ngoại lệ."
+            },
+            CommonErrors = new[]
+            {
+                "Đóng ngoại lệ nhưng lỗi quay lại: dữ liệu gốc chưa được sửa.",
+                "Không thấy ngoại lệ của kho khác: tài khoản đang bị giới hạn kho.",
+                "Không phân công được: thiếu quyền quản lý."
+            },
+            ExpectedResult = "Ngoại lệ có trạng thái, người phụ trách, ghi chú xử lý và tham chiếu nghiệp vụ rõ ràng.",
+            SafetyNote = "Không đóng ngoại lệ chỉ để làm sạch danh sách; phải xử lý nguyên nhân trước."
+        },
+        new
+        {
+            Key = "bao-cao",
+            Title = "Báo cáo",
+            Icon = "fa-chart-line",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên báo cáo", "Chỉ xem" },
+            Purpose = "Theo dõi chỉ số vận hành, tồn kho, kiểm kê, thống kê nhập/xuất theo kỳ, sắp hết hạn, bất thường và hiệu suất kho.",
+            Screen = "Báo cáo -> Tổng quan kho, Chỉ số vận hành, Thống kê nhập/xuất, Báo cáo tồn kho, Báo cáo vận hành vận chuyển, Báo cáo chi phí, Báo cáo quản trị dữ liệu, Bất thường dữ liệu, Sắp hết hạn, Phân nhóm quan trọng.",
+            Prerequisites = new[]
+            {
+                "Có dữ liệu nghiệp vụ trong kỳ cần xem.",
+                "Người dùng có quyền báo cáo phù hợp; báo cáo tài chính/giá trị tồn chỉ cho vai trò được phép.",
+                "Bộ lọc kho, ngày và nhóm dữ liệu được chọn đúng."
+            },
+            Steps = new[]
+            {
+                "Chọn báo cáo phù hợp với câu hỏi cần trả lời.",
+                "Lọc kho, ngày, vật tư, đối tác hoặc trạng thái.",
+                "Kiểm tra số liệu tổng quan trước, sau đó mở bảng chi tiết.",
+                "Từ Tổng quan kho, mở danh sách Mã hàng phát sinh nhiều hoặc dữ liệu kiểm soát để truy vết các chỉ số nổi bật.",
+                "Với Thống kê nhập/xuất, bắt buộc chọn Từ ngày và Đến ngày, sau đó đối chiếu mã phiếu, lô, hạn sử dụng, ngày nhập nguồn và vị trí nguồn/đích.",
+                "Xuất Excel khi cần gửi danh sách xử lý hoặc lưu hồ sơ.",
+                "Đối chiếu số liệu bất thường với sổ giao dịch tồn kho."
+            },
+            CommonErrors = new[]
+            {
+                "Không thấy giá trị tồn: tài khoản không có quyền xem dữ liệu nhạy cảm.",
+                "Số liệu lệch kỳ: kiểm tra bộ lọc ngày giờ.",
+                "Bảng trống: kiểm tra kho được gán hoặc dữ liệu phát sinh."
+            },
+            ExpectedResult = "Người quản lý đọc được tình trạng vận hành và có danh sách hành động rõ ràng.",
+            SafetyNote = "Không dùng báo cáo tổng hợp để sửa dữ liệu; hãy sửa tại màn nghiệp vụ gốc."
+        },
+        new
+        {
+            Key = "danh-muc",
+            Title = "Danh mục",
+            Icon = "fa-layer-group",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Duy trì dữ liệu nền như kho, đối tác, vật tư, đơn vị tính, vị trí và cấu hình để nghiệp vụ chạy đúng.",
+            Screen = "Danh mục -> Đối tác, Danh mục vật tư, Đơn vị tính, Khu vực kho, Vị trí/kệ/khu chứa, Cấu hình phân loại đơn và cấu hình kho nhiều chủ hàng được phân quyền.",
+            Prerequisites = new[]
+            {
+                "Có quy chuẩn mã kho, mã vật tư, mã đối tác và mã vị trí.",
+                "Người thao tác có quyền danh mục.",
+                "Đã xác định dữ liệu có thể ảnh hưởng đến phiếu đang mở hay không."
+            },
+            Steps = new[]
+            {
+                "Tạo hoặc cập nhật kho, vị trí, đối tác và vật tư theo quy chuẩn mã.",
+                "Với vật tư, khai báo quản lý lô, hạn dùng, số sê-ri, cân thực tế nếu cần.",
+                "Khai báo đơn vị tính và quy đổi nếu nghiệp vụ dùng nhiều đơn vị.",
+                "Không xóa dữ liệu đã phát sinh; ưu tiên tạm ngừng hoạt động nếu không dùng nữa.",
+                "Kiểm tra lại màn tạo phiếu để bảo đảm dữ liệu nền xuất hiện đúng."
+            },
+            CommonErrors = new[]
+            {
+                "Không tìm thấy vật tư khi tạo phiếu: vật tư chưa hoạt động hoặc sai kho/phạm vi.",
+                "Sai đơn vị tính: kiểm tra đơn vị gốc và đơn vị nhập/xuất.",
+                "Vật tư cần số sê-ri nhưng chưa bật cờ: sửa cấu hình trước khi phát sinh giao dịch."
+            },
+            ExpectedResult = "Dữ liệu nền nhất quán, hỗ trợ đúng các luồng nhập, xuất, tồn, vận chuyển và báo cáo.",
+            SafetyNote = "Thay đổi dữ liệu nền có thể ảnh hưởng toàn bộ phiếu mới; cần kiểm tra trước khi áp dụng rộng."
+        },
+        new
+        {
+            Key = "nguoi-dung-thiet-bi",
+            Title = "Người dùng, phân quyền và thiết bị tin cậy",
+            Icon = "fa-shield-halved",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Quản lý danh tính, vai trò, phạm vi kho/chủ hàng và thiết bị đã được tin cậy sau xác thực bổ sung.",
+            Screen = "Hệ thống -> Người dùng, Hệ thống -> Yêu cầu truy cập, Hệ thống -> Phân quyền khu vực, Tài khoản -> Thiết bị tin cậy.",
+            Prerequisites = new[]
+            {
+                "Có quy trình phê duyệt nhân sự mới.",
+                "Đã xác định người dùng cần quyền gì và làm ở kho nào.",
+                "Tài khoản có thư điện tử nếu vai trò cần xác thực bổ sung."
+            },
+            Steps = new[]
+            {
+                "Tạo tài khoản với thông tin đăng nhập và thông tin nhân sự.",
+                "Gán vai trò, kho thao tác và phạm vi chủ hàng nếu có.",
+                "Yêu cầu người dùng đổi mật khẩu tạm sau lần đăng nhập đầu.",
+                "Mở màn thiết bị tin cậy để kiểm tra thiết bị đã xác thực.",
+                "Thu hồi thiết bị hiện tại khi dùng máy công cộng hoặc máy đổi người.",
+                "Thu hồi tất cả thiết bị khi nghi ngờ tài khoản bị lộ."
+            },
+            CommonErrors = new[]
+            {
+                "Tài khoản không thao tác được: thiếu kho hoặc quyền nghiệp vụ.",
+                "Không nhận được mã xác thực: kiểm tra thư điện tử.",
+                "Thiết bị cũ vẫn vào được: thu hồi toàn bộ thiết bị tin cậy."
+            },
+            ExpectedResult = "Danh tính được kiểm soát, thiết bị tin cậy được giám sát và quyền người dùng đúng phạm vi.",
+            SafetyNote = "Thiết bị tin cậy chỉ giảm bước xác thực bổ sung; không thay thế mật khẩu mạnh và phân quyền đúng."
+        },
+        new
+        {
+            Key = "kiem-tra-cuoi-ca",
+            Title = "Kiểm tra cuối ca",
+            Icon = "fa-clipboard-list",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên vận hành theo ca" },
+            Purpose = "Chốt ca vận hành bằng danh sách kiểm tra để phát hiện sớm phiếu, kiện, nhiệm vụ hoặc ngoại lệ còn dang dở.",
+            Screen = "Trang chính, Báo cáo -> Bất thường dữ liệu, Vận chuyển -> Đối soát giao hàng, Tồn kho -> Lịch sử nhập xuất và các báo cáo được phân quyền.",
+            Prerequisites = new[]
+            {
+                "Ca làm đã hoàn tất thao tác thực tế.",
+                "Các phiếu khẩn, chuyến xe và nhiệm vụ lấy hàng trong ca đã được cập nhật.",
+                "Quản lý ca có quyền xem ngoại lệ và báo cáo."
+            },
+            Steps = new[]
+            {
+                "Mở trang chính để xem nhiệm vụ quá hạn, phiếu giao trễ và hàng sắp thiếu.",
+                "Mở trung tâm ngoại lệ, xử lý hoặc phân công lỗi còn mở.",
+                "Mở đối soát giao hàng để kiểm tra kiện chưa xếp, thiếu vận đơn hoặc hãng báo giao thất bại.",
+                "Kiểm tra nhiệm vụ lấy hàng, di chuyển và bổ sung hàng chưa hoàn tất.",
+                "Kiểm tra phiếu nhập đang nhận dở, thiếu số sê-ri, thiếu cân hoặc thiếu vị trí.",
+                "Xuất báo cáo cần bàn giao cho ca sau nếu có lỗi chưa xử lý.",
+                "Ghi chú bàn giao ca với mã phiếu, mã kiện, chuyến xe hoặc ngoại lệ liên quan."
+            },
+            CommonErrors = new[]
+            {
+                "Nhiệm vụ vẫn mở sau ca: kiểm tra người phụ trách và trạng thái thực tế.",
+                "Phiếu đã giao nhưng thiếu vận đơn: xử lý trước khi chốt báo cáo giao hàng.",
+                "Ngoại lệ tự mở lại: dữ liệu gốc chưa được sửa đúng."
+            },
+            ExpectedResult = "Ca sau nhận bàn giao rõ ràng, không còn lỗi nghiệp vụ bị che khuất trong hệ thống.",
+            SafetyNote = "Không chốt ca chỉ dựa vào cảm nhận ngoài kho; luôn đối chiếu trên hệ thống."
+        },
+        new
+        {
+            Key = "xu-ly-loi-van-hanh",
+            Title = "Xử lý lỗi và ngoại lệ khi thao tác",
+            Icon = "fa-triangle-exclamation",
+            Roles = new[] { "Quản trị viên", "Quản lý kho", "Nhân viên vận hành", "Nhân viên báo cáo", "Chỉ xem" },
+            Purpose = "Giúp người dùng phân biệt lỗi thao tác, lỗi dữ liệu và kiểm soát nghiệp vụ; khôi phục an toàn mà không bấm lặp hoặc sửa tồn trực tiếp.",
+            Screen = "Thông báo trên màn hình, Chi tiết phiếu, Hàng đợi quét, Báo cáo -> Bất thường dữ liệu, Hệ thống -> Nhật ký hệ thống (khi được phân quyền).",
+            Prerequisites = new[]
+            {
+                "Ghi lại mã phiếu/mã nhiệm vụ, thời điểm, kho, chủ hàng và nội dung thông báo; không ghi hoặc gửi mật khẩu/API key.",
+                "Kiểm tra trạng thái mới nhất sau khi tải lại trang một lần để loại trừ màn hình cũ.",
+                "Xác định thao tác vừa làm là đọc dữ liệu hay có thể đổi tồn, giữ chỗ, số sê-ri hoặc trạng thái phiếu."
+            },
+            Steps = new[]
+            {
+                "Dừng bấm lặp khi nút đang xử lý; chỉ thử lại sau khi hệ thống báo thất bại rõ ràng và trạng thái không đổi.",
+                "Nếu báo thiếu số sê-ri, hiểu rằng xác nhận số lượng thực nhận và đăng ký từng số sê-ri là hai bước riêng; mở Nhận số sê-ri và ghi đủ số còn thiếu.",
+                "Nếu báo vi phạm tách nhiệm vụ, chuyển bước duyệt/ghi sổ cho một tài khoản khác có quyền; hệ thống phải giữ nguyên trạng thái và tồn khi từ chối.",
+                "Nếu báo vị trí đã chứa vật tư khác, chọn vị trí trống hoặc vị trí đang chứa đúng mã hàng/chủ hàng; không đổi dữ liệu vị trí để lách kiểm soát.",
+                "Nếu báo kỳ đã khóa, không đổi ngày chứng từ để lách khóa; liên hệ quản lý mở kỳ đúng quy trình hoặc tạo giao dịch ở kỳ hợp lệ.",
+                "Nếu báo dữ liệu đã thay đổi, tải lại trang, đối chiếu số lượng/trạng thái rồi thực hiện lại trên phiên bản mới; không gửi lại payload cũ.",
+                "Nếu mạng yếu, mở Hàng đợi quét, xem lý do từng thao tác và chỉ Gửi lại khi phiên đăng nhập cùng trạng thái nghiệp vụ còn hợp lệ.",
+                "Khi lỗi vẫn lặp lại, chuyển mã tham chiếu và ảnh chụp không chứa bí mật cho quản lý/quản trị; kiểm tra Bất thường dữ liệu và nhật ký liên quan."
+            },
+            CommonErrors = new[]
+            {
+                "Thông báo số lượng đã ghi nhận nhưng vẫn thiếu số sê-ri: không phải cùng một trường dữ liệu; cần đăng ký từng số sê-ri.",
+                "Thông báo tách nhiệm vụ nhưng trạng thái vẫn đổi: dừng quy trình và báo quản trị vì đây là dấu hiệu cần đối soát ngay.",
+                "Nút xoay liên tục: kiểm tra Hàng đợi quét/kết nối; không mở nhiều tab để gửi cùng thao tác.",
+                "Thông báo chung chung: dùng mã phiếu và thời điểm để tra nhật ký, không đoán rồi sửa tồn bằng tay."
+            },
+            ExpectedResult = "Người dùng biết bước nào cần sửa dữ liệu, bước nào cần người khác phê duyệt và bước nào phải chuyển quản trị; không phát sinh thao tác trùng hoặc thay đổi tồn ngoài workflow.",
+            SafetyNote = "Không sửa trực tiếp database, không dùng tài khoản người khác, không tắt kiểm soát tách nhiệm vụ và không xóa lịch sử để xử lý lỗi."
+        },
+        new
+        {
+            Key = "vat-tu-uom-dong-goi",
+            Title = "Vật tư, đơn vị tính và quy cách đóng gói",
+            Icon = "fa-ruler-combined",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Quản lý master data vật tư theo chuẩn kho: mã hàng, mã vạch, đơn vị cơ sở, đơn vị quy đổi, quy cách đóng gói và trạng thái hoạt động.",
+            Screen = "Danh mục -> Danh mục vật tư, Đơn vị tính; các màn tạo phiếu dùng dữ liệu vật tư và đơn vị đã cấu hình.",
+            Prerequisites = new[]
+            {
+                "Đã có quy chuẩn mã vật tư, đơn vị cơ sở và nhóm vật tư.",
+                "Đơn vị tính cơ sở phải đang hoạt động trước khi tạo vật tư.",
+                "Nếu dùng đơn vị nhập/xuất khác đơn vị tồn, phải khai báo quy đổi hợp lệ."
+            },
+            Steps = new[]
+            {
+                "Tạo hoặc mở vật tư, kiểm tra mã, tên, mã vạch, danh mục, loại vật tư và trạng thái.",
+                "Chọn đơn vị cơ sở đúng với cách hệ thống lưu tồn.",
+                "Khai báo các đơn vị quy đổi dùng khi nhập, xuất hoặc đóng gói.",
+                "Nếu vật tư cần lô, hạn dùng, số sê-ri hoặc cân thực tế, bật đúng cờ nghiệp vụ trước khi phát sinh phiếu.",
+                "Kiểm tra lại màn tạo phiếu: vật tư phải hiện đúng và đơn vị nhập/xuất chỉ gồm đơn vị cơ sở hoặc đơn vị có quy đổi."
+            },
+            CommonErrors = new[]
+            {
+                "Không chọn được đơn vị nhập/xuất: vật tư thiếu đơn vị cơ sở hoạt động hoặc thiếu quy đổi.",
+                "Mã vạch quét không ra vật tư: kiểm tra barcode, trạng thái vật tư và trùng mã.",
+                "Sai tồn sau quy đổi: kiểm tra hệ số quy đổi và không dùng đơn vị chưa khai báo."
+            },
+            ExpectedResult = "Vật tư được dùng trong phiếu với đơn vị chuẩn, hệ thống quy đổi về đơn vị tồn kho đúng và không cho chọn đơn vị ngoài cấu hình.",
+            SafetyNote = "Không đổi đơn vị cơ sở của vật tư đã phát sinh giao dịch nếu chưa có kế hoạch chuyển đổi dữ liệu và kiểm kê."
+        },
+        new
+        {
+            Key = "phieu-chuyen-tra-dieu-chinh-huy",
+            Title = "Chuyển kho, trả hàng, điều chỉnh và hủy phiếu",
+            Icon = "fa-file-circle-exclamation",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Hướng dẫn các phiếu làm thay đổi tồn ngoài nhập/xuất thông thường: chuyển kho, trả nhà cung cấp, khách trả hàng, điều chỉnh tồn và hủy phiếu.",
+            Screen = "Tạo phiếu chuyển kho, Tạo phiếu trả NCC/khách trả, Chốt tồn, Kiểm kê, Chi tiết phiếu, nút Hủy phiếu.",
+            Prerequisites = new[]
+            {
+                "Người thao tác có quyền với kho nguồn và kho đích nếu là chuyển kho.",
+                "Phiếu cần hủy phải đang ở trạng thái còn được phép hủy theo quy tắc nghiệp vụ.",
+                "Điều chỉnh tồn phải có lý do rõ ràng và dựa trên kiểm kê hoặc đối soát."
+            },
+            Steps = new[]
+            {
+                "Chọn đúng loại phiếu theo nghiệp vụ: chuyển kho, trả nhà cung cấp, khách trả hoặc điều chỉnh.",
+                "Khai báo kho, đối tác, dòng vật tư, số lượng, đơn vị, lô/hạn dùng và vị trí.",
+                "Duyệt hoặc hoàn tất theo quy trình của phiếu.",
+                "Với hủy phiếu, nhập lý do hủy và kiểm tra hệ thống có giải phóng giữ chỗ hoặc hoàn nguyên tồn kho hay không.",
+                "Sau khi hoàn tất, đối chiếu sổ giao dịch tồn kho để xác nhận tăng/giảm đúng chiều."
+            },
+            CommonErrors = new[]
+            {
+                "Chuyển kho sai phạm vi: người dùng không có quyền với kho nguồn hoặc đích.",
+                "Không hủy được: phiếu đã ghi sổ, đã giao hoặc đang bị ràng buộc bởi kiện/chuyến/vận đơn.",
+                "Điều chỉnh âm tồn: số lượng thực tế không đủ hoặc kỳ kho đã khóa."
+            },
+            ExpectedResult = "Mỗi phiếu tạo đúng sổ giao dịch tồn kho tăng/giảm, không lệch giữ chỗ, không vượt phạm vi kho và có lý do/nhật ký đầy đủ.",
+            SafetyNote = "Không dùng điều chỉnh tồn để che lỗi phiếu; phải sửa hoặc hủy đúng nghiệp vụ gốc trước."
+        },
+        new
+        {
+            Key = "lo-han-dung",
+            Title = "Lô, ngày sản xuất và hạn sử dụng",
+            Icon = "fa-calendar-days",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Kiểm soát hàng theo lô, ngày sản xuất, hạn sử dụng và nguyên tắc FEFO để giảm rủi ro xuất sai lô hoặc xuất hàng hết hạn.",
+            Screen = "Tạo phiếu nhập/xuất, Tiếp nhận hàng, Quét lấy hàng, Báo cáo sắp hết hạn, Sổ giao dịch tồn kho.",
+            Prerequisites = new[]
+            {
+                "Vật tư đã bật quản lý lô hoặc hạn dùng nếu nghiệp vụ yêu cầu.",
+                "Nhân viên có thông tin lô, ngày sản xuất và hạn sử dụng từ chứng từ hoặc nhãn hàng.",
+                "Kho đã thống nhất quy tắc ưu tiên xuất trước hàng hết hạn sớm."
+            },
+            Steps = new[]
+            {
+                "Khi nhập, ghi đúng số lô, ngày sản xuất và hạn sử dụng trên từng dòng.",
+                "Khi cất hàng, không trộn lô nếu vị trí hoặc quy trình không cho phép.",
+                "Khi xuất, kiểm tra lô được hệ thống gợi ý và ưu tiên FEFO nếu mặt hàng có hạn dùng.",
+                "Khi kiểm kê, kiểm theo lô/hạn dùng chứ không chỉ kiểm tổng số lượng.",
+                "Theo dõi báo cáo sắp hết hạn để xử lý chuyển vị trí, ưu tiên xuất hoặc cách ly."
+            },
+            CommonErrors = new[]
+            {
+                "Thiếu hạn sử dụng khi nhập: phiếu bị chặn hoàn tất nếu vật tư yêu cầu.",
+                "Xuất sai lô: kiểm lại giữ chỗ, vị trí nguồn và quy tắc FEFO.",
+                "Báo cáo hết hạn không có dữ liệu: kiểm tra người nhập có ghi HSD hay không."
+            },
+            ExpectedResult = "Tồn kho xem được theo từng lô/hạn dùng, phiếu xuất lấy đúng lô và báo cáo hết hạn cảnh báo đúng.",
+            SafetyNote = "Không nhập lô hoặc hạn dùng vào ghi chú tự do; dữ liệu phải nằm trên trường nghiệp vụ để hệ thống kiểm soát."
+        },
+        new
+        {
+            Key = "ai-doc-chung-tu",
+            Title = "Đọc chứng từ bằng AI",
+            Icon = "fa-wand-magic-sparkles",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Dùng AI để gợi ý dòng vật tư từ chứng từ upload, giúp giảm nhập tay nhưng vẫn yêu cầu người dùng kiểm tra trước khi lưu phiếu.",
+            Screen = "Tạo phiếu nhập hoặc xuất -> Đọc chứng từ bằng AI, nhật ký đọc chứng từ, xem trước dòng nhập liệu.",
+            Prerequisites = new[]
+            {
+                "File thuộc định dạng hệ thống cho phép và không vượt dung lượng cấu hình.",
+                "Dịch vụ đọc chứng từ đã được cấu hình sẵn sàng.",
+                "Danh mục vật tư, mã vật tư, mã vạch và đơn vị tính đã có để hệ thống khớp dòng."
+            },
+            Steps = new[]
+            {
+                "Mở màn tạo phiếu và bấm Đọc chứng từ bằng AI.",
+                "Upload chứng từ, chờ hệ thống phân tích và trả về dòng đề xuất.",
+                "Kiểm tra từng dòng: mã vật tư, tên, số lượng, đơn vị, lô, ngày sản xuất, hạn sử dụng.",
+                "Dòng chưa khớp hoặc độ tin cậy thấp phải được chọn/sửa thủ công.",
+                "Chỉ đưa dòng vào phiếu sau khi người dùng xác nhận dữ liệu đúng."
+            },
+            CommonErrors = new[]
+            {
+                "Không đọc được file: kiểm tra định dạng, dung lượng hoặc trạng thái dịch vụ AI.",
+                "Khớp sai vật tư: ưu tiên mã vật tư/mã vạch thay vì tên gần giống.",
+                "Thiếu đơn vị hoặc lô: bổ sung thủ công trước khi lưu phiếu."
+            },
+            ExpectedResult = "AI chỉ hỗ trợ tạo dòng nháp; phiếu vẫn phải qua kiểm tra, lưu và ghi sổ theo quy trình kho.",
+            SafetyNote = "Không để AI tự động ghi sổ tồn kho hoặc bỏ qua bước người dùng xác nhận dòng chứng từ."
+        },
+        new
+        {
+            Key = "toi-uu-van-hanh",
+            Title = "Tối ưu vận hành, bổ sung hàng và phân loại đơn",
+            Icon = "fa-route",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Tối ưu vị trí cất/lấy hàng, bổ sung hàng về khu picking, mô phỏng sức chứa, phát hành đơn trực tiếp và phân loại đơn sau khi lấy tổng.",
+            Screen = "Bổ sung hàng, Tối ưu vị trí, Mô phỏng slotting, Mô phỏng sức chứa, Tối ưu vận hành, Chuyển thẳng, Cấu hình phát hành trực tiếp, Cấu hình phân loại đơn, Năng suất lao động.",
+            Prerequisites = new[]
+            {
+                "Có dữ liệu tồn, vị trí, sức chứa, vận tốc vật tư và nhu cầu xuất.",
+                "Khu picking, khu dự trữ và vị trí staging đã được khai báo.",
+                "Quản lý hiểu rõ tác động trước khi tạo nhiệm vụ tự động hàng loạt."
+            },
+            Steps = new[]
+            {
+                "Xem đề xuất bổ sung hoặc slotting, kiểm tra nguồn, đích, số lượng và lý do đề xuất.",
+                "Chạy mô phỏng trước khi áp dụng thay đổi lớn.",
+                "Tạo nhiệm vụ di chuyển hoặc bổ sung hàng cho nhân viên phù hợp.",
+                "Cấu hình phát hành trực tiếp hoặc phân loại đơn khi kho có quy trình tương ứng.",
+                "Theo dõi năng suất lao động và ngoại lệ để điều chỉnh quy tắc."
+            },
+            CommonErrors = new[]
+            {
+                "Đề xuất không hợp lý: dữ liệu vị trí, sức chứa hoặc vận tốc vật tư chưa đủ.",
+                "Không tạo nhiệm vụ được: thiếu vị trí nguồn/đích hoặc tồn nguồn không khả dụng.",
+                "Phân loại đơn lỗi: thiếu staging hoặc tote/cart cấu hình."
+            },
+            ExpectedResult = "Kho giảm quãng đường di chuyển, khu lấy hàng đủ hàng, nhiệm vụ rõ người phụ trách và không tạo di chuyển sai kho/vị trí.",
+            SafetyNote = "Không áp dụng hàng loạt đề xuất tối ưu nếu chưa xem mô phỏng và chưa kiểm tra sức chứa vị trí."
+        },
+        new
+        {
+            Key = "workflow-zone",
+            Title = "Quy tắc vận hành và phân quyền khu vực",
+            Icon = "fa-sliders",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Thiết lập bước nghiệp vụ bắt buộc theo kho/phạm vi chủ hàng và giới hạn nhân viên theo khu vực làm việc.",
+            Screen = "Hệ thống -> Quy tắc vận hành, Hệ thống -> Phân quyền khu vực.",
+            Prerequisites = new[]
+            {
+                "Đã xác định quy trình chuẩn của kho: quét vị trí, quét vật tư, kiểm phẩm, duyệt, đóng gói.",
+                "Đã có danh sách nhân viên, kho và zone cần phân quyền.",
+                "Nếu áp dụng theo khách hàng thuê kho, chủ hàng phải hoạt động và thuộc đúng phạm vi."
+            },
+            Steps = new[]
+            {
+                "Chọn kho và phạm vi áp dụng: toàn kho hoặc theo khách hàng thuê kho.",
+                "Bật/tắt các bước bắt buộc cho phân hệ nghiệp vụ.",
+                "Lưu quy tắc và kiểm tra bảng danh sách quy tắc đang dùng.",
+                "Mở phân quyền khu vực, gán nhân viên vào zone phù hợp.",
+                "Đăng nhập bằng tài khoản nhân viên để kiểm tra chỉ thấy/tạo nhiệm vụ trong phạm vi được cấp."
+            },
+            CommonErrors = new[]
+            {
+                "Nhân viên không thấy nhiệm vụ: thiếu khu vực hoặc kho.",
+                "Quy tắc không áp dụng: chọn sai kho, sai phạm vi hoặc phân hệ.",
+                "Chủ hàng không hợp lệ: chủ hàng không hoạt động hoặc ngoài phạm vi."
+            },
+            ExpectedResult = "Workflow đúng theo quy trình kho, nhân viên chỉ thao tác trong vùng được phân công và có audit khi thay đổi.",
+            SafetyNote = "Không tắt bước quét/duyệt chỉ để thao tác nhanh nếu bước đó đang là kiểm soát bắt buộc của kho."
+        },
+        new
+        {
+            Key = "tu-dong-hoa-tich-hop",
+            Title = "Tích hợp, API, EDI, webhook và tự động hóa",
+            Icon = "fa-network-wired",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Theo dõi kết nối hệ thống ngoài, hãng vận chuyển, hàng đợi gửi dữ liệu, phản hồi, EDI/webhook và thiết bị tự động trong vận hành kho.",
+            Screen = "Tích hợp hệ thống, Tự động hóa thiết bị, màn hình thiết bị tự động, tài liệu API, nhập/xuất EDI, phát lại webhook.",
+            Prerequisites = new[]
+            {
+                "Connector đã được cấu hình endpoint, xác thực và phạm vi kho.",
+                "Có quy tắc chống gửi trùng, gửi lại và hàng đợi lỗi cho dữ liệu gửi/nhận.",
+                "Người thao tác hiểu rõ hệ thống ngoài nào là nguồn sự thật của từng loại dữ liệu."
+            },
+            Steps = new[]
+            {
+                "Mở màn hình tích hợp để xem trạng thái bộ kết nối, hàng đợi và lỗi gần nhất.",
+                "Kiểm tra payload theo mã phiếu, vật tư, shipment hoặc command MHE.",
+                "Với EDI/API, nhập hoặc phát lại đúng bản ghi cần xử lý, không gửi lại hàng loạt khi chưa rõ lỗi.",
+                "Với thiết bị tự động, theo dõi vòng đời lệnh: tạo, gửi, xác nhận, lỗi, gửi lại, xử lý thủ công.",
+                "Sau khi xử lý lỗi, đối chiếu audit và dữ liệu nghiệp vụ gốc."
+            },
+            CommonErrors = new[]
+            {
+                "Connector inactive: kiểm tra cấu hình và endpoint.",
+                "Gói dữ liệu bị gửi trùng: kiểm tra khóa chống gửi trùng.",
+                "Webhook/EDI lỗi lặp lại: đưa vào hàng đợi lỗi và xử lý nguyên nhân thay vì phát lại liên tục."
+            },
+            ExpectedResult = "Tích hợp có trạng thái rõ, lỗi có thể gửi lại/phát lại có kiểm soát và không làm sai tồn hoặc trạng thái phiếu.",
+            SafetyNote = "Không chỉnh trực tiếp gói dữ liệu môi trường thật hoặc phát lại hàng loạt nếu chưa có phương án hoàn nguyên và bằng chứng đối soát."
+        },
+        new
+        {
+            Key = "kitting-vas",
+            Title = "Lắp bộ hàng và gia công phụ trợ",
+            Icon = "fa-boxes-packing",
+            Roles = new[] { "Quản lý kho" },
+            Purpose = "Quản lý lệnh kitting và VAS khi kho cần lắp bộ, dán nhãn, đổi bao bì hoặc xử lý phụ trợ trước khi nhập/xuất.",
+            Screen = "Tồn kho -> Phiếu lắp bộ hàng, Tồn kho -> Gia công phụ trợ, chi tiết lệnh xử lý.",
+            Prerequisites = new[]
+            {
+                "Có cấu hình thành phẩm, vật tư thành phần hoặc yêu cầu dịch vụ phụ trợ.",
+                "Vật tư thành phần đủ tồn khả dụng theo kho/chủ hàng/lô nếu cần.",
+                "Người thao tác có quyền tạo và hoàn tất lệnh xử lý."
+            },
+            Steps = new[]
+            {
+                "Tạo lệnh xử lý với kho, chủ hàng, vật tư đầu vào/đầu ra và số lượng.",
+                "Giữ chỗ hoặc xuất dùng vật tư thành phần theo quy trình.",
+                "Ghi nhận thao tác phụ trợ, hao hụt, ghi chú và người xử lý.",
+                "Nhập thành phẩm hoặc đóng lệnh xử lý khi hoàn tất.",
+                "Đối chiếu sổ kho: vật tư thành phần giảm, thành phẩm tăng hoặc phí dịch vụ được ghi nhận."
+            },
+            CommonErrors = new[]
+            {
+                "Thiếu vật tư thành phần: kiểm tra tồn khả dụng và số lượng đã giữ chỗ.",
+                "Không đóng được lệnh xử lý: còn dòng chưa xuất dùng/nhập thành phẩm hoặc thiếu lý do hao hụt.",
+                "Sai chủ hàng: vật tư thành phần và thành phẩm không cùng phạm vi chủ hàng."
+            },
+            ExpectedResult = "Lệnh xử lý có trạng thái rõ, tồn vật tư thành phần/thành phẩm đúng và truy vết được dịch vụ phụ trợ.",
+            SafetyNote = "Không chuyển vật tư thành phần thành thành phẩm bằng điều chỉnh tồn; phải dùng lệnh xử lý để có đủ sổ kho."
+        },
+        new
+        {
+            Key = "kho-nhieu-chu-hang",
+            Title = "Kho nhiều chủ hàng và khách hàng thuê kho",
+            Icon = "fa-building-user",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Quản lý tồn, hợp đồng, bảng giá, kỳ tính phí và cổng chủ hàng cho mô hình kho giữ hàng cho nhiều khách hàng.",
+            Screen = "Khu vực chủ hàng, Hợp đồng kho nhiều chủ hàng, Bảng giá kho nhiều chủ hàng, Tính phí kho nhiều chủ hàng, Phân quyền chủ hàng.",
+            Prerequisites = new[]
+            {
+                "Đã khai báo chủ hàng/khách hàng thuê kho đang hoạt động.",
+                "Người dùng được gán phạm vi chủ hàng phù hợp.",
+                "Hợp đồng, bảng giá và kỳ tính phí được cấu hình trước khi phát hành hóa đơn."
+            },
+            Steps = new[]
+            {
+                "Gán phạm vi chủ hàng cho người dùng hoặc vai trò cần thao tác.",
+                "Khai báo hợp đồng, bảng giá và điều kiện tính phí theo kho/chủ hàng.",
+                "Khi tạo phiếu, chọn loại sở hữu hàng đúng: nội bộ hoặc khách hàng thuê kho.",
+                "Chạy kỳ tính phí, kiểm tra dòng phí, xử lý tranh chấp nếu có.",
+                "Dùng client portal để kiểm tra dữ liệu mà chủ hàng được phép nhìn thấy."
+            },
+            CommonErrors = new[]
+            {
+                "Tồn nội bộ lẫn với tồn thuê kho: kiểm tra chủ hàng và phạm vi phiếu.",
+                "Không tính được phí: thiếu hợp đồng hoặc bảng giá hiệu lực.",
+                "Chủ hàng thấy thiếu dữ liệu: kiểm tra phạm vi chủ hàng và kho."
+            },
+            ExpectedResult = "Tồn của từng chủ hàng tách biệt, người dùng chỉ thấy đúng phạm vi, phần tính phí có hợp đồng/bảng giá/kỳ tính phí rõ ràng.",
+            SafetyNote = "Không dùng cùng một phiếu để trộn hàng nội bộ và hàng của khách hàng thuê kho."
+        },
+        new
+        {
+            Key = "nhan-chung-tu",
+            Title = "Nhãn, mẫu in và chứng từ kho",
+            Icon = "fa-tags",
+            Roles = new[] { "Quản lý kho", "Nhân viên kho" },
+            Purpose = "Quản lý mẫu nhãn, quy tắc nhãn theo vật tư/chủ hàng và hàng đợi in để bảo đảm barcode/chứng từ đọc được sau khi in.",
+            Screen = "Nhãn & chứng từ, Mẫu nhãn, Quy tắc nhãn vật tư, Hàng đợi in, các màn in phiếu/nhãn.",
+            Prerequisites = new[]
+            {
+                "Máy in, khổ giấy và mẫu in đã được kiểm tra trong môi trường vận hành.",
+                "Barcode, mã vật tư, mã kiện hoặc vận đơn có dữ liệu hợp lệ.",
+                "Người thao tác có quyền in hoặc cấu hình mẫu in."
+            },
+            Steps = new[]
+            {
+                "Chọn loại nhãn hoặc chứng từ cần in.",
+                "Kiểm tra mẫu, khổ giấy, số bản và dữ liệu barcode trước khi in.",
+                "Với manager, cấu hình template và rule theo chủ hàng/vật tư nếu cần.",
+                "Theo dõi hàng đợi in, xử lý lỗi in và in lại khi cần.",
+                "Sau khi in, quét thử barcode để xác nhận nhãn/chứng từ dùng được."
+            },
+            CommonErrors = new[]
+            {
+                "Barcode in ra không đọc được: kiểm tra khổ giấy, mật độ in và nội dung mã.",
+                "In sai mẫu: kiểm tra rule theo chủ hàng/vật tư.",
+                "Hàng đợi in lỗi: kiểm tra máy in hoặc quyền thao tác."
+            },
+            ExpectedResult = "Nhãn và chứng từ in đúng mẫu, đúng dữ liệu, barcode đọc được và có lịch sử in.",
+            SafetyNote = "Không giao hàng bằng nhãn/vận đơn chưa quét kiểm tra được."
+        },
+        new
+        {
+            Key = "bao-cao-nang-cao",
+            Title = "Báo cáo nâng cao, lịch báo cáo và trợ lý dữ liệu",
+            Icon = "fa-chart-simple",
+            Roles = new[] { "Quản trị viên", "Quản lý kho" },
+            Purpose = "Đọc các dashboard quản trị như KPI, phân tích vận hành, chi phí, dữ liệu quản trị, cảnh báo dự báo, lịch báo cáo và trợ lý dữ liệu nội bộ.",
+            Screen = "Chỉ số vận hành, Phân tích vận hành, Semantic BI, Chi phí vận hành, Cảnh báo theo quy tắc, Lịch báo cáo, Trợ lý dữ liệu nội bộ, Hiệu suất không gian, Thời gian nhập kho.",
+            Prerequisites = new[]
+            {
+                "Có dữ liệu nghiệp vụ đủ kỳ phân tích.",
+                "Người dùng có quyền xem báo cáo tương ứng; báo cáo tài chính cần quyền riêng.",
+                "Bộ lọc kho, ngày và phạm vi chủ hàng được chọn đúng."
+            },
+            Steps = new[]
+            {
+                "Mở dashboard phù hợp với câu hỏi quản trị cần trả lời.",
+                "Chọn kho, kỳ, nhóm dữ liệu và đọc KPI tổng quan trước.",
+                "Mở bảng chi tiết để xác định vật tư, phiếu, vị trí hoặc chủ hàng gây biến động.",
+                "Tạo lịch báo cáo nếu cần gửi định kỳ.",
+                "Dùng trợ lý dữ liệu để hỏi thông tin tổng hợp, sau đó đối chiếu lại bằng báo cáo nguồn."
+            },
+            CommonErrors = new[]
+            {
+                "Không thấy báo cáo chi phí: thiếu quyền tài chính.",
+                "Số liệu khác báo cáo tồn: kiểm tra kỳ, phạm vi kho/chủ hàng và thời điểm chốt ảnh tồn.",
+                "Trợ lý trả lời chưa đủ: mở báo cáo nguồn để kiểm chứng."
+            },
+            ExpectedResult = "Quản lý có số liệu đủ để ra quyết định và biết đường truy ngược về dữ liệu nguồn.",
+            SafetyNote = "Không dùng câu trả lời tổng hợp của trợ lý dữ liệu làm bằng chứng duy nhất cho điều chỉnh tồn hoặc quyết định tài chính."
+        },
+        new
+        {
+            Key = "demo-du-lieu",
+            Title = "Demo dữ liệu",
+            Icon = "fa-database",
+            Roles = new[] { "Quản trị viên" },
+            Purpose = "Làm sạch dữ liệu nghiệp vụ/danh mục kho cũ và nạp một bộ dữ liệu mẫu nhất quán để trình bày nhanh hệ thống theo từng bối cảnh vận hành.",
+            Screen = "Hệ thống -> Demo dữ liệu.",
+            Prerequisites = new[]
+            {
+                "Tài khoản đang đăng nhập là quản trị viên.",
+                "Đã hiểu thao tác này xóa dữ liệu nghiệp vụ/danh mục kho cũ nhưng giữ tài khoản, mật khẩu/hash, vai trò, phân quyền, cấu hình xác thực và schema.",
+                "Nếu môi trường đang có dữ liệu thật, phải có backup hoặc được phê duyệt trước khi nạp demo."
+            },
+            Steps = new[]
+            {
+                "Mở Hệ thống -> Demo dữ liệu.",
+                "Đọc phạm vi cleanup an toàn trên màn hình.",
+                "Chọn một trong ba bối cảnh: Demo kho thiết bị IT, Demo kho vật tư y tế hoặc Demo kho thương mại điện tử.",
+                "Xác nhận hộp thoại cảnh báo trước khi nạp dữ liệu.",
+                "Sau khi nạp xong, kiểm tra vật tư, tồn kho, phiếu, QC, kiểm kê và audit nghiệp vụ theo kịch bản demo."
+            },
+            CommonErrors = new[]
+            {
+                "Không thấy menu Demo dữ liệu: tài khoản không phải quản trị viên.",
+                "Không muốn mất dữ liệu vận hành cũ: không bấm nạp demo khi chưa backup.",
+                "Nạp demo lỗi: hệ thống hoàn tác transaction và giữ nguyên dữ liệu đăng nhập."
+            },
+            ExpectedResult = "Hệ thống có một bộ dữ liệu demo sạch, nhất quán theo bối cảnh đã chọn, trong khi tài khoản đăng nhập và phân quyền vẫn hoạt động.",
+            SafetyNote = "Không dùng màn này trên dữ liệu vận hành thật nếu chưa có backup, phê duyệt và kế hoạch khôi phục."
+        },
+        new
+        {
+            Key = "sre-data-quality",
+            Title = "Giám sát hệ thống và kiểm tra chất lượng dữ liệu",
+            Icon = "fa-heart-pulse",
+            Roles = new[] { "Quản trị viên" },
+            Purpose = "Theo dõi sức khỏe hệ thống, nhật ký, cảnh báo, data quality audit, package/evidence gate và các dấu hiệu lỗi production.",
+            Screen = "Hệ thống -> Giám sát hệ thống, Báo cáo -> Nhật ký, Phân tích nhật ký, Cảnh báo, DataQualityAudit endpoint, evidence gate artifacts.",
+            Prerequisites = new[]
+            {
+                "Tài khoản có quyền quản trị hoặc quyền vận hành hệ thống.",
+                "Có quy trình xem log, xử lý cảnh báo và lưu bằng chứng đã redact.",
+                "Không in hoặc đưa secret vào log, report hoặc artifact."
+            },
+            Steps = new[]
+            {
+                "Mở dashboard giám sát để xem request, lỗi, độ trễ, queue và trạng thái hệ thống.",
+                "Mở nhật ký/audit để truy vết thao tác người dùng hoặc thay đổi dữ liệu.",
+                "Chạy hoặc xem kết quả kiểm tra chất lượng dữ liệu cho đơn vị tính, vật tư, vị trí, tồn kho, giữ chỗ và số sê-ri.",
+                "Khi có cảnh báo, ghi nhận thời điểm, phạm vi ảnh hưởng, người xử lý và hướng khắc phục.",
+                "Lưu bằng chứng đã redact theo checklist release nếu dùng để đánh giá production."
+            },
+            CommonErrors = new[]
+            {
+                "Dashboard trống: chưa có telemetry hoặc user thiếu quyền.",
+                "Data quality báo lỗi: xử lý dữ liệu gốc trước khi chạy lại gate.",
+                "Artifact chứa dữ liệu nhạy cảm: redact và rotate secret nếu đã lộ."
+            },
+            ExpectedResult = "Admin thấy được tình trạng hệ thống, phát hiện lệch dữ liệu sớm và có bằng chứng kiểm tra không lộ secret.",
+            SafetyNote = "Không đánh dấu production 100% nếu thiếu bằng chứng thiết bị thật, load/DR/HA, integration và observability ngoài repo."
+        }
+    };
+
+    var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var isAdmin = WmsRoles.IsAdmin(currentRole);
+    var isManager = WmsRoles.IsManager(currentRole);
+    var isLegacyStaff = WmsRoles.IsLegacyStaff(currentRole);
+    var isInboundStaff = string.Equals(currentRole, WmsRoles.InboundStaff, StringComparison.OrdinalIgnoreCase);
+    var isOutboundStaff = string.Equals(currentRole, WmsRoles.OutboundStaff, StringComparison.OrdinalIgnoreCase);
+    var isInventoryStaff = string.Equals(currentRole, WmsRoles.InventoryStaff, StringComparison.OrdinalIgnoreCase);
+    var isTransportStaff = string.Equals(currentRole, WmsRoles.TransportStaff, StringComparison.OrdinalIgnoreCase);
+    var isReportViewer = WmsRoles.IsReportingSpecialist(currentRole);
+    var isViewer = WmsRoles.IsViewerOnly(currentRole);
+    var isWarehouseOperator = WmsRoles.IsWarehouseOperator(currentRole);
+    var currentRoleKey = isAdmin ? "admin"
+        : isManager ? "manager"
+        : isLegacyStaff ? "staff"
+        : isInboundStaff ? "inbound"
+        : isOutboundStaff ? "outbound"
+        : isInventoryStaff ? "inventory"
+        : isTransportStaff ? "transport"
+        : isReportViewer ? "report"
+        : "viewer";
+    var currentRoleName = WmsRoles.Label(currentRole);
+    var currentRoleDescription = WmsRoles.Description(currentRole);
+    var adminOnlyHelpSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "demo-du-lieu",
+        "sre-data-quality",
+        "nguoi-dung-thiet-bi"
+    };
+    var commonOperatorHelpSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "bat-dau",
+        "quet-dien-thoai",
+        "hang-doi-quet",
+        "xu-ly-loi-van-hanh",
+        "kiem-tra-cuoi-ca"
+    };
+    var staffHelpSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "bat-dau",
+        "nhap-kho",
+        "xuat-kho",
+        "ton-kho",
+        "ma-kien",
+        "so-se-ri",
+        "can-thuc-te",
+        "quet-dien-thoai",
+        "hang-doi-quet",
+        "di-chuyen-ton",
+        "kiem-tra-chat-luong",
+        "bai-do",
+        "chuyen-xe",
+        "phieu-chuyen-tra-dieu-chinh-huy",
+        "lo-han-dung",
+        "ai-doc-chung-tu",
+        "nhan-chung-tu",
+        "kiem-ke-thong-minh",
+        "xu-ly-loi-van-hanh",
+        "kiem-tra-cuoi-ca"
+    };
+    var inboundHelpSections = new HashSet<string>(commonOperatorHelpSections, StringComparer.OrdinalIgnoreCase)
+    {
+        "nhap-kho",
+        "so-se-ri",
+        "can-thuc-te",
+        "kiem-tra-chat-luong",
+        "lo-han-dung",
+        "ai-doc-chung-tu"
+    };
+    var outboundHelpSections = new HashSet<string>(commonOperatorHelpSections, StringComparer.OrdinalIgnoreCase)
+    {
+        "xuat-kho",
+        "ma-kien",
+        "so-se-ri",
+        "can-thuc-te",
+        "nhan-chung-tu"
+    };
+    var inventoryHelpSections = new HashSet<string>(commonOperatorHelpSections, StringComparer.OrdinalIgnoreCase)
+    {
+        "ton-kho",
+        "ma-kien",
+        "so-se-ri",
+        "bo-sung-hang",
+        "di-chuyen-ton",
+        "kiem-ke-thong-minh",
+        "phieu-chuyen-tra-dieu-chinh-huy",
+        "lo-han-dung"
+    };
+    var transportHelpSections = new HashSet<string>(commonOperatorHelpSections, StringComparer.OrdinalIgnoreCase)
+    {
+        "xuat-kho",
+        "ma-kien",
+        "can-thuc-te",
+        "bai-do",
+        "chuyen-xe",
+        "doi-soat-giao-hang",
+        "nhan-chung-tu"
+    };
+    var reportingHelpSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "bat-dau",
+        "ton-kho",
+        "kiem-ke-thong-minh",
+        "trung-tam-ngoai-le",
+        "bao-cao",
+        "bao-cao-nang-cao",
+        "xu-ly-loi-van-hanh",
+        "kiem-tra-cuoi-ca"
+    };
+    var viewerHelpSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "bat-dau",
+        "ton-kho",
+        "ma-kien",
+        "so-se-ri",
+        "bao-cao",
+        "xu-ly-loi-van-hanh",
+        "kiem-tra-cuoi-ca"
+    };
+
+    bool CanSeeHelpSection(string key)
+    {
+        if (isAdmin) return true;
+        if (isManager) return !adminOnlyHelpSections.Contains(key);
+        if (isLegacyStaff) return staffHelpSections.Contains(key);
+        if (isInboundStaff) return inboundHelpSections.Contains(key);
+        if (isOutboundStaff) return outboundHelpSections.Contains(key);
+        if (isInventoryStaff) return inventoryHelpSections.Contains(key);
+        if (isTransportStaff) return transportHelpSections.Contains(key);
+        if (isReportViewer) return reportingHelpSections.Contains(key);
+        return viewerHelpSections.Contains(key);
+    }
+
+    string RoleScopeText(string key)
+    {
+        if (isAdmin)
+            return "Bạn đang ở quyền quản trị: xem toàn bộ hướng dẫn, cấu hình người dùng, phân quyền, danh mục và các luồng vận hành trọng yếu.";
+        if (isManager)
+        {
+            if (adminOnlyHelpSections.Contains(key))
+                return "Mục này chỉ dành cho quản trị viên hệ thống.";
+            return "Bạn đang ở quyền quản lý kho: xem và xử lý các luồng vận hành, duyệt nghiệp vụ, theo dõi báo cáo, ngoại lệ và cấu hình vận hành được phân quyền.";
+        }
+        if (isReportViewer || isViewer)
+            return $"Bạn đang ở quyền {currentRoleName}: chỉ đọc dữ liệu theo kho/chủ hàng được gán; không thực hiện thao tác làm đổi tồn kho.";
+        if (isWarehouseOperator)
+            return $"Bạn đang ở quyền {currentRoleName}: {currentRoleDescription} Chỉ thao tác trong kho, khu vực và chủ hàng được gán.";
+        return $"Vai trò hiện tại là {currentRoleName}. Chỉ sử dụng các màn và hành động được hệ thống hiển thị theo quyền đã cấp.";
+    }
+
+    var quickLinks = new List<(string Title, string Url, string Icon)>
+    {
+        ("Trang chính", Url.Action("Index", "Home") ?? "#", "fa-chart-pie")
+    };
+    string[] roleReadingPath;
+
+    if (isAdmin)
+    {
+        quickLinks.Add(("Người dùng", Url.Action("Index", "Users") ?? "#", "fa-users-cog"));
+        quickLinks.Add(("Giám sát hệ thống", Url.Action("SreDashboard", "System") ?? "#", "fa-heart-pulse"));
+        quickLinks.Add(("Bất thường dữ liệu", Url.Action("ExceptionCenter", "Operations") ?? "#", "fa-triangle-exclamation"));
+        quickLinks.Add(("Tổng quan kho", Url.Action("WarehouseOverview", "Reports") ?? "#", "fa-table-columns"));
+        roleReadingPath = new[] { "Bắt đầu và phân quyền", "Quy tắc vận hành", "Giám sát và dữ liệu", "Xử lý ngoại lệ" };
+    }
+    else if (isManager)
+    {
+        quickLinks.Add(("Duyệt phiếu nhập", Url.Action("InboundApprovals", "Operations") ?? "#", "fa-clipboard-check"));
+        quickLinks.Add(("Kiểm kê thông minh", Url.Action("InventoryRisk", "Reports") ?? "#", "fa-chart-line"));
+        quickLinks.Add(("Bất thường dữ liệu", Url.Action("ExceptionCenter", "Operations") ?? "#", "fa-triangle-exclamation"));
+        quickLinks.Add(("Tổng quan kho", Url.Action("WarehouseOverview", "Reports") ?? "#", "fa-table-columns"));
+        roleReadingPath = new[] { "Kiểm tra công việc cần xử lý", "Duyệt và phân công", "Theo dõi tồn và ngoại lệ", "Đối soát cuối ca" };
+    }
+    else if (isLegacyStaff)
+    {
+        quickLinks.Add(("Tiếp nhận hàng", Url.Action("Receiving", "Operations") ?? "#", "fa-truck-loading"));
+        quickLinks.Add(("Nhiệm vụ lấy hàng", Url.Action("PickTasks", "Operations") ?? "#", "fa-list-check"));
+        quickLinks.Add(("Xem tồn kho", Url.Action("Inventory", "Reports", new { nav = "inventory" }) ?? "#", "fa-boxes-stacked"));
+        roleReadingPath = new[] { "Xác định nhiệm vụ", "Quét và xác nhận thực tế", "Xử lý ngoại lệ", "Bàn giao cuối ca" };
+    }
+    else if (isInboundStaff)
+    {
+        quickLinks.Add(("Tiếp nhận hàng", Url.Action("Receiving", "Operations") ?? "#", "fa-truck-loading"));
+        quickLinks.Add(("Quét nhận hàng", Url.Action("RfReceiving", "Operations") ?? "#", "fa-mobile-screen"));
+        quickLinks.Add(("Kiểm tra chất lượng", Url.Action("QualityInspection", "Operations") ?? "#", "fa-microscope"));
+        roleReadingPath = new[] { "Kiểm tra lịch nhận", "Nhận và kiểm hàng", "Ghi số sê-ri/lô", "Hoàn tất và bàn giao" };
+    }
+    else if (isOutboundStaff)
+    {
+        quickLinks.Add(("Nhiệm vụ lấy hàng", Url.Action("PickTasks", "Operations") ?? "#", "fa-list-check"));
+        quickLinks.Add(("Quét lấy hàng", Url.Action("RfPicking", "Operations") ?? "#", "fa-mobile-screen"));
+        quickLinks.Add(("Đóng gói & giao", Url.Action("Shipping", "Operations") ?? "#", "fa-box-open"));
+        roleReadingPath = new[] { "Nhận nhiệm vụ", "Quét đúng vị trí/hàng", "Xử lý lấy thiếu", "Đóng gói và bàn giao" };
+    }
+    else if (isInventoryStaff)
+    {
+        quickLinks.Add(("Xem tồn kho", Url.Action("Inventory", "Reports", new { nav = "inventory" }) ?? "#", "fa-boxes-stacked"));
+        quickLinks.Add(("Kiểm kê", Url.Action("StockCount", "Reports") ?? "#", "fa-clipboard-check"));
+        quickLinks.Add(("Kiểm kê thông minh", Url.Action("InventoryRisk", "Reports") ?? "#", "fa-chart-line"));
+        quickLinks.Add(("Nhiệm vụ di chuyển", Url.Action("MovementTasks", "Operations") ?? "#", "fa-dolly"));
+        roleReadingPath = new[] { "Đối chiếu tồn", "Thực hiện kiểm kê", "Gửi duyệt chênh lệch", "Theo dõi điều chỉnh" };
+    }
+    else if (isTransportStaff)
+    {
+        quickLinks.Add(("Điều phối vận chuyển", Url.Action("ShippingDispatch", "Operations") ?? "#", "fa-route"));
+        quickLinks.Add(("Bảng chuyến xe", Url.Action("ShipmentLoads", "Operations") ?? "#", "fa-truck-ramp-box"));
+        quickLinks.Add(("Đối soát giao hàng", Url.Action("DeliveryReconciliation", "Operations") ?? "#", "fa-clipboard-check"));
+        roleReadingPath = new[] { "Kiểm tra kiện sẵn sàng", "Lập và quét chuyến", "Xác nhận bàn giao", "Đối soát giao hàng" };
+    }
+    else if (isReportViewer)
+    {
+        quickLinks.Add(("Tổng quan kho", Url.Action("WarehouseOverview", "Reports") ?? "#", "fa-table-columns"));
+        quickLinks.Add(("Chỉ số vận hành", Url.Action("OpsKpi", "Reports") ?? "#", "fa-gauge-high"));
+        quickLinks.Add(("Thống kê nhập/xuất", Url.Action("InventoryInOutSummary", "Reports") ?? "#", "fa-chart-column"));
+        roleReadingPath = new[] { "Chọn đúng phạm vi", "Đọc KPI và thời điểm dữ liệu", "Mở chi tiết nguồn", "Xuất báo cáo an toàn" };
+    }
+    else
+    {
+        quickLinks.Add(("Báo cáo tồn kho", Url.Action("Inventory", "Reports", new { nav = "report" }) ?? "#", "fa-boxes-stacked"));
+        roleReadingPath = new[] { "Chọn đúng kho", "Tra cứu tồn", "Mở dữ liệu chi tiết", "Báo ngoại lệ cho quản lý" };
+    }
+
+    string SystemCheckText(string key)
+    {
+        return key switch
+        {
+            "bat-dau" => "Hệ thống kiểm tra đăng nhập, vai trò, kho được gán, thiết bị tin cậy và quyền truy cập trước khi mở màn vận hành.",
+            "vai-tro-phan-quyen" => "Hệ thống kiểm tra vai trò, chính sách quyền, kho, vùng và phạm vi chủ hàng trước khi cho phép thao tác.",
+            "nhap-kho" => "Hệ thống kiểm tra vật tư hoạt động, đơn vị hợp lệ, lô/hạn dùng, số sê-ri, cân thực tế, vị trí cùng kho và trạng thái phiếu trước khi cộng tồn.",
+            "xuat-kho" => "Hệ thống kiểm tra tồn khả dụng, giữ chỗ, FEFO/lô/hạn dùng, số sê-ri, mã kiện, trạng thái lấy hàng/đóng gói/giao hàng và không cho xuất âm.",
+            "ton-kho" => "Hệ thống đối chiếu tồn theo kho, vị trí, lô, chủ hàng, giữ chỗ và sổ giao dịch tồn kho.",
+            "kiem-ke-thong-minh" => "Hệ thống kiểm tra phạm vi kho/chủ hàng, thời điểm dữ liệu, chất lượng dữ liệu, phiên bản chấm điểm, trạng thái đề xuất và kiểm kê đang hoạt động trước khi tạo phiếu.",
+            "ma-kien" => "Hệ thống kiểm tra mã kiện thuộc đúng kho/chủ hàng, không trùng mã, không tạo vòng lặp cha/con và không di chuyển kiện đang bị giữ.",
+            "so-se-ri" => "Hệ thống kiểm tra số sê-ri không trùng, đúng vật tư, đúng kho/chủ hàng và đúng trạng thái trước khi nhận, giữ chỗ hoặc xuất.",
+            "can-thuc-te" => "Hệ thống kiểm tra vật tư có yêu cầu cân, đơn vị cân, dung sai, liên kết phiếu/kiện và dữ liệu cân bắt buộc trước khi chốt.",
+            "quet-dien-thoai" => "Hệ thống kiểm tra quyền camera, ô đang focus, mã quét đúng ngữ cảnh và phản hồi lỗi khi mã không hợp lệ.",
+            "hang-doi-quet" => "Hệ thống kiểm tra phiên đăng nhập, mã chống giả mạo, chống gửi trùng và trạng thái nghiệp vụ trước khi gửi lại thao tác.",
+            "bo-sung-hang" => "Hệ thống kiểm tra tồn nguồn, vị trí đích, sức chứa, khu vực picking và quyền tạo nhiệm vụ.",
+            "di-chuyen-ton" => "Hệ thống kiểm tra vị trí nguồn/đích cùng kho, tồn khả dụng, mã kiện, số sê-ri và trạng thái nhiệm vụ trước khi ghi sổ kho.",
+            "kiem-tra-chat-luong" => "Hệ thống kiểm tra số lượng mẫu, số đạt/lỗi, hướng xử lý và trạng thái phiếu trước khi cho hàng vào tồn tốt.",
+            "bai-do" => "Hệ thống kiểm tra vị trí bãi trống, lượt xe đang hoạt động, cửa bến, giờ vào/ra và bảng giá phí bãi.",
+            "chuyen-xe" => "Hệ thống kiểm tra phiếu/kiện cùng kho, trạng thái đóng gói, vận đơn, số kiện đã quét và trạng thái chuyến trước khi rời kho.",
+            "van-don" => "Hệ thống kiểm tra bộ kết nối, kiện xuất, mã theo dõi, gửi lại/chống gửi trùng và trạng thái hãng vận chuyển.",
+            "doi-soat-giao-hang" => "Hệ thống đối chiếu phiếu, kiện, chuyến, vận đơn và trạng thái giao để phát hiện lệch.",
+            "trung-tam-ngoai-le" => "Hệ thống kiểm tra loại ngoại lệ, mức độ, người phụ trách, trạng thái xử lý và tham chiếu nghiệp vụ.",
+            "bao-cao" => "Hệ thống kiểm tra phạm vi kho/chủ hàng, quyền báo cáo, bộ lọc kỳ và nguồn dữ liệu trước khi hiển thị hoặc xuất file.",
+            "danh-muc" => "Hệ thống kiểm tra mã trùng, trạng thái đang hoạt động, liên kết kho/vị trí/đơn vị tính và dữ liệu đã phát sinh trước khi cho sửa hoặc ngừng sử dụng.",
+            "nguoi-dung-thiet-bi" => "Hệ thống kiểm tra vai trò, chính sách quyền, xác thực nhiều lớp, thiết bị tin cậy, trạng thái tài khoản và nhật ký khi cấp/thu hồi quyền.",
+            "kiem-tra-cuoi-ca" => "Hệ thống cung cấp dashboard, ngoại lệ, đối soát, sổ giao dịch và báo cáo để người quản lý xác nhận ca không còn việc mở.",
+            "xu-ly-loi-van-hanh" => "Hệ thống kiểm tra trạng thái mới nhất, quyền, tách nhiệm vụ, kỳ khóa, mã chống gửi trùng và phiên bản dữ liệu; thao tác bị từ chối phải không làm đổi tồn hoặc trạng thái nghiệp vụ.",
+            "vat-tu-uom-dong-goi" => "Hệ thống kiểm tra đơn vị cơ sở đang hoạt động, quy đổi dương, đơn vị tính được phép theo vật tư và không chia cho 0.",
+            "phieu-chuyen-tra-dieu-chinh-huy" => "Hệ thống kiểm tra trạng thái phiếu, phạm vi kho, tồn khả dụng, giữ chỗ, kỳ khóa và lý do hủy/điều chỉnh.",
+            "lo-han-dung" => "Hệ thống kiểm tra lô, ngày sản xuất, hạn sử dụng, FEFO và cảnh báo hàng sắp hết hạn.",
+            "ai-doc-chung-tu" => "Hệ thống kiểm tra loại tệp, dung lượng, trạng thái dịch vụ AI, độ tin cậy, mã vật tư và dòng cần rà soát.",
+            "toi-uu-van-hanh" => "Hệ thống kiểm tra dữ liệu vận tốc, sức chứa, nguồn/đích, tồn khả dụng và nhiệm vụ phát sinh trước khi áp dụng đề xuất.",
+            "workflow-zone" => "Hệ thống kiểm tra kho, phạm vi áp dụng, chủ hàng, module quy trình và phân quyền khu vực trước khi áp dụng quy tắc.",
+            "tu-dong-hoa-tich-hop" => "Hệ thống kiểm tra bộ kết nối, chống gửi trùng, gửi lại, hàng đợi lỗi, phản hồi và nhật ký gói dữ liệu.",
+            "kitting-vas" => "Hệ thống kiểm tra vật tư thành phần, tồn khả dụng, phạm vi chủ hàng, trạng thái lệnh xử lý và giao dịch xuất dùng/nhập thành phẩm trong sổ kho.",
+            "kho-nhieu-chu-hang" => "Hệ thống kiểm tra phạm vi chủ hàng, hợp đồng, bảng giá, kỳ tính phí và tách tồn nội bộ với tồn thuê kho.",
+            "nhan-chung-tu" => "Hệ thống kiểm tra mẫu in, rule theo vật tư/chủ hàng, khổ giấy, barcode và trạng thái hàng đợi in.",
+            "bao-cao-nang-cao" => "Hệ thống kiểm tra quyền báo cáo, quyền tài chính, bộ lọc kỳ, phạm vi kho/chủ hàng và nguồn dữ liệu quản trị.",
+            "demo-du-lieu" => "Hệ thống kiểm tra vai trò quản trị, mã chống giả mạo, giao dịch dọn/tạo dữ liệu mẫu và danh sách kho/vùng/đối tác đang thuộc phạm vi đăng nhập trước khi xóa dữ liệu nghiệp vụ cũ.",
+            "sre-data-quality" => "Hệ thống kiểm tra đo lường hệ thống, nhật ký, cảnh báo, đơn vị tính/vật tư/vị trí/tồn kho/giữ chỗ/số sê-ri nhất quán và artifact không lộ bí mật.",
+            _ => "Hệ thống kiểm tra quyền, trạng thái nghiệp vụ, dữ liệu bắt buộc và phạm vi kho/chủ hàng trước khi cho thao tác."
+        };
+    }
+
+    var visibleSections = sections.Where(s => CanSeeHelpSection(s.Key)).ToArray();
+}
+
+<div class="page-header">
+    <div class="header-content">
+        <h1 class="page-title"><i class="fas fa-book-open"></i> Hướng dẫn sử dụng WMS Pro</h1>
+        <div class="page-subtitle">Tài liệu vận hành chi tiết theo từng nghiệp vụ, viết để người mới có thể đọc, làm theo và tự kiểm tra kết quả.</div>
+    </div>
+</div>
+
+<div class="help-workspace">
+    <aside class="help-toc" aria-label="Mục lục hướng dẫn">
+        <div class="help-toc-title"><i class="fas fa-list-check"></i> Mục lục</div>
+        <div class="help-search">
+            <i class="fas fa-search"></i>
+            <input id="helpSearchInput" type="search" placeholder="Tìm trong hướng dẫn..." autocomplete="off" />
+        </div>
+        <nav class="help-toc-links">
+            @foreach (var helpSection in visibleSections)
+            {
+                <a href="#help-@helpSection.Key" data-help-link="@helpSection.Key">@helpSection.Title</a>
+            }
+        </nav>
+        <div class="help-toc-note">
+            Mỗi mục có thể mở hoặc đóng riêng. Hệ thống nhớ trạng thái trong trình duyệt hiện tại.
+        </div>
+    </aside>
+
+    <main class="help-content">
+        <section class="help-role-dashboard" aria-labelledby="helpRoleTitle">
+            <div class="help-role-copy">
+                <span class="help-role-kicker">Hướng dẫn theo tài khoản đang đăng nhập</span>
+                <h2 id="helpRoleTitle"><i class="fas fa-user-shield"></i> @currentRoleName</h2>
+                <p>@currentRoleDescription</p>
+                <p class="help-role-scope"><i class="fas fa-warehouse"></i> Mọi dữ liệu và thao tác vẫn bị giới hạn theo kho, khu vực và chủ hàng được gán.</p>
+            </div>
+            <nav class="help-quick-links" aria-label="Lối vào nhanh theo vai trò">
+                @foreach (var link in quickLinks)
+                {
+                    <a href="@link.Url"><i class="fas @link.Icon"></i><span>@link.Title</span></a>
+                }
+            </nav>
+        </section>
+
+        <div class="user-guide">
+            <div class="user-guide-title"><i class="fas fa-route"></i> Lộ trình ưu tiên cho @currentRoleName</div>
+            <div class="step-list">
+                @for (var index = 0; index < roleReadingPath.Length; index++)
+                {
+                    <span class="step-chip">@(index + 1)) @roleReadingPath[index]</span>
+                }
+            </div>
+        </div>
+
+        <div class="help-toolbar">
+            <button type="button" class="btn btn-secondary" id="helpExpandAll"><i class="fas fa-plus-square"></i> Mở tất cả</button>
+            <button type="button" class="btn btn-secondary" id="helpCollapseAll"><i class="fas fa-minus-square"></i> Đóng tất cả</button>
+            <span class="help-toolbar-note"><i class="fas fa-user-shield"></i> Nội dung đang lọc theo quyền: @currentRoleName</span>
+        </div>
+
+        <section class="help-accordion" id="helpAccordion" data-help-role="@currentRoleKey">
+            @for (var index = 0; index < visibleSections.Length; index++)
+            {
+                var helpSection = visibleSections[index];
+                <details class="help-accordion-item" id="help-@helpSection.Key" data-help-key="@helpSection.Key" @(index == 0 ? "open" : null)>
+                    <summary class="help-accordion-summary">
+                        <span class="help-section-icon"><i class="fas @helpSection.Icon"></i></span>
+                        <span>
+                            <span class="help-section-kicker">Phần @(index + 1)</span>
+                            <strong>@helpSection.Title</strong>
+                        </span>
+                        <i class="fas fa-chevron-down help-chevron"></i>
+                    </summary>
+                    <div class="help-accordion-body">
+                        <div class="help-detail-grid">
+                            <div class="help-detail-card">
+                                <h3>Mục đích</h3>
+                                <p>@helpSection.Purpose</p>
+                            </div>
+                            <div class="help-detail-card">
+                                <h3>Ai được dùng</h3>
+                                <p>@string.Join(", ", helpSection.Roles)</p>
+                            </div>
+                            <div class="help-detail-card">
+                                <h3>Bạn được thấy/làm gì</h3>
+                                <p>@RoleScopeText(helpSection.Key)</p>
+                            </div>
+                            <div class="help-detail-card">
+                                <h3>Vào màn nào</h3>
+                                <p>@helpSection.Screen</p>
+                            </div>
+                        </div>
+
+                        <div class="help-subsection">
+                            <h3>Điều kiện cần có trước khi làm</h3>
+                            <ul class="help-check-list">
+                                @foreach (var item in helpSection.Prerequisites)
+                                {
+                                    <li>@item</li>
+                                }
+                            </ul>
+                        </div>
+
+                        <div class="help-subsection">
+                            <h3>Các bước thao tác chi tiết</h3>
+                            <ol class="help-step-list">
+                                @foreach (var step in helpSection.Steps)
+                                {
+                                    <li>@step</li>
+                                }
+                            </ol>
+                        </div>
+
+                        <div class="help-subsection">
+                            <h3>Hệ thống tự kiểm tra gì</h3>
+                            <p>@SystemCheckText(helpSection.Key)</p>
+                        </div>
+
+                        <div class="help-detail-grid">
+                            <div class="help-detail-card warning">
+                                <h3>Lỗi thường gặp</h3>
+                                <ul>
+                                    @foreach (var item in helpSection.CommonErrors)
+                                    {
+                                        <li>@item</li>
+                                    }
+                                </ul>
+                            </div>
+                            <div class="help-detail-card success">
+                                <h3>Kết quả đúng sau khi hoàn tất</h3>
+                                <p>@helpSection.ExpectedResult</p>
+                                <h3>Không được làm</h3>
+                                <p>@helpSection.SafetyNote</p>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            }
+            @if (!visibleSections.Any())
+            {
+                <div class="empty-state">
+                    <i class="fas fa-lock"></i>
+                    <h3>Chưa có mục hướng dẫn phù hợp</h3>
+                    <p>Tài khoản hiện tại chưa được gán quyền xem hướng dẫn vận hành. Vui lòng liên hệ quản trị viên.</p>
+                </div>
+            }
+            <div class="empty-state" id="helpSearchEmpty" hidden aria-live="polite">
+                <i class="fas fa-search"></i>
+                <h3>Không tìm thấy nội dung phù hợp</h3>
+                <p>Hãy thử từ khóa ngắn hơn như “số sê-ri”, “khóa kỳ”, “kiểm kê” hoặc “tách nhiệm vụ”.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const accordion = document.getElementById('helpAccordion');
+            const storageKey = 'wms-help-open-sections-v2-' + (accordion?.dataset?.helpRole || 'viewer');
+            const items = Array.from(document.querySelectorAll('.help-accordion-item'));
+            const tocLinks = Array.from(document.querySelectorAll('[data-help-link]'));
+            const searchInput = document.getElementById('helpSearchInput');
+            const searchEmpty = document.getElementById('helpSearchEmpty');
+
+            function readState() {
+                try {
+                    return JSON.parse(sessionStorage.getItem(storageKey) || '{}');
+                } catch {
+                    return {};
+                }
+            }
+
+            function writeState() {
+                const state = {};
+                items.forEach(item => state[item.dataset.helpKey] = item.open);
+                sessionStorage.setItem(storageKey, JSON.stringify(state));
+            }
+
+            const saved = readState();
+            items.forEach((item, index) => {
+                if (Object.prototype.hasOwnProperty.call(saved, item.dataset.helpKey)) {
+                    item.open = !!saved[item.dataset.helpKey];
+                } else {
+                    item.open = index === 0;
+                }
+                item.addEventListener('toggle', writeState);
+            });
+
+            document.getElementById('helpExpandAll')?.addEventListener('click', () => {
+                items.forEach(item => item.open = true);
+                writeState();
+            });
+
+            document.getElementById('helpCollapseAll')?.addEventListener('click', () => {
+                items.forEach(item => item.open = false);
+                writeState();
+            });
+
+            searchInput?.addEventListener('input', () => {
+                const keyword = searchInput.value.trim().toLowerCase();
+                let matchedCount = 0;
+                items.forEach(item => {
+                    const matched = !keyword || item.textContent.toLowerCase().includes(keyword);
+                    item.hidden = !matched;
+                    matchedCount += matched ? 1 : 0;
+                    if (keyword && matched) {
+                        item.open = true;
+                    }
+                });
+                tocLinks.forEach(link => {
+                    const targetKey = link.dataset.helpLink;
+                    const target = items.find(item => item.dataset.helpKey === targetKey);
+                    link.hidden = !!target?.hidden;
+                });
+                if (searchEmpty) {
+                    searchEmpty.hidden = matchedCount > 0;
+                }
+            });
+        })();
+    </script>
+}

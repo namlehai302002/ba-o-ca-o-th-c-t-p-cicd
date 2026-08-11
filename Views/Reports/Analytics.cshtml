@@ -1,0 +1,238 @@
+@{
+    ViewData["Title"] = "Phân tích vận hành";
+
+    var days = (int)ViewBag.Days;
+    var chartDates = (List<string>)ViewBag.ChartDates;
+    var inbound = (List<int>)ViewBag.InboundByDay;
+    var outbound = (List<int>)ViewBag.OutboundByDay;
+    var lines = (List<int>)ViewBag.LinesByDay;
+    var warehouses = (List<WMS.Models.Warehouse>)ViewBag.Warehouses;
+    var selectedWarehouseId = ViewBag.WarehouseId as int?;
+    var hasThroughput = inbound.Any(x => x > 0) || outbound.Any(x => x > 0) || lines.Any(x => x > 0);
+    var chartLabelsJson = System.Text.Json.JsonSerializer.Serialize(chartDates);
+    var inboundJson = System.Text.Json.JsonSerializer.Serialize(inbound);
+    var outboundJson = System.Text.Json.JsonSerializer.Serialize(outbound);
+    var linesJson = System.Text.Json.JsonSerializer.Serialize(lines);
+    var daysOfSupply = (decimal?)ViewBag.DaysOfSupply;
+    var canSeeFinancial = ViewBag.CanSeeFinancial is bool financial && financial;
+    var daysOfSupplyRows = (IEnumerable<WMS.ViewModels.DaysOfSupplyItemRow>)ViewBag.DaysOfSupplyRows;
+    string riskStatusLabel(WMS.ViewModels.DaysOfSupplyItemRow row) => row.DataQualityCode switch
+    {
+        "READY" when row.IsReplenishmentRisk => "Cần bổ sung",
+        "READY" => "Đủ vùng an toàn",
+        "LEAD_TIME_DATA_MISSING" => "Thiếu lead time",
+        "LEAD_TIME_CONFLICT" => "Lead time chưa thống nhất",
+        _ => "Chưa đủ mẫu nhu cầu"
+    };
+    string riskStatusClass(WMS.ViewModels.DaysOfSupplyItemRow row) => row.DataQualityCode switch
+    {
+        "READY" when row.IsReplenishmentRisk => "status-badge-danger",
+        "READY" => "status-badge-success",
+        "LEAD_TIME_DATA_MISSING" or "LEAD_TIME_CONFLICT" => "status-badge-warning",
+        _ => "status-badge-secondary"
+    };
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Phân tích vận hành</h1>
+        <p class="page-subtitle">Tổng hợp nhập, xuất, dòng hàng, tồn kho và chất lượng trong cùng một khung thời gian vận hành.</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="Reports" asp-action="SupplierInboundScorecard" class="btn btn-secondary">
+            <i class="fas fa-truck-ramp-box"></i> Hiệu suất nhà cung cấp
+        </a>
+        <a asp-controller="Reports" asp-action="SpaceUtilization" class="btn btn-secondary">
+            <i class="fas fa-cubes"></i> Hiệu suất kho
+        </a>
+        <a asp-controller="Reports" asp-action="DockToStock" class="btn btn-secondary">
+            <i class="fas fa-stopwatch"></i> Thời gian nhập kho
+        </a>
+    </div>
+</div>
+
+<section class="enterprise-section">
+    <div class="enterprise-section__header">
+        <div>
+            <h2>Bộ lọc vận hành</h2>
+            <p>Khoảng thời gian được tính theo giờ Việt Nam và dữ liệu trong phạm vi kho hiện tại.</p>
+        </div>
+        <span class="status-badge status-badge-info">Nguồn: phiếu, tồn kho, kiểm phẩm</span>
+    </div>
+    <form method="get" class="filter-bar">
+        <div class="form-group">
+            <label class="form-label">Kho</label>
+            <select class="form-control" name="warehouseId">
+                <option value="">Tất cả</option>
+                @foreach (var warehouse in warehouses)
+                {
+                    <option value="@warehouse.WarehouseId" selected="@(selectedWarehouseId.HasValue && selectedWarehouseId.Value == warehouse.WarehouseId)">
+                        @warehouse.WarehouseCode - @warehouse.WarehouseName
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Khoảng thời gian</label>
+            <select class="form-control" name="days">
+                <option value="7" selected="@(days == 7)">7 ngày</option>
+                <option value="14" selected="@(days == 14)">14 ngày</option>
+                <option value="30" selected="@(days == 30)">30 ngày</option>
+                <option value="60" selected="@(days == 60)">60 ngày</option>
+                <option value="90" selected="@(days == 90)">90 ngày</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Thao tác</label>
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-filter"></i> Lọc dữ liệu
+            </button>
+        </div>
+    </form>
+</section>
+
+<div class="metric-grid">
+    <div class="metric-card accent">
+        <div class="metric-value">@ViewBag.TotalInbound</div>
+        <div class="metric-label">Phiếu nhập</div>
+    </div>
+    <div class="metric-card success">
+        <div class="metric-value">@ViewBag.TotalOutbound</div>
+        <div class="metric-label">Phiếu xuất</div>
+    </div>
+    <div class="metric-card info">
+        <div class="metric-value">@((int)ViewBag.TotalLines)</div>
+        <div class="metric-label">Dòng hàng xử lý</div>
+    </div>
+    @if (canSeeFinancial)
+    {
+        <div class="metric-card purple">
+            <div class="metric-value">@(((decimal?)ViewBag.TotalValue ?? 0m).ToString("N0")) VND</div>
+            <div class="metric-label">Tổng giá trị giao dịch</div>
+        </div>
+    }
+    <div class="metric-card warning">
+        <div class="metric-value">@ViewBag.StockKeepingUnitCount</div>
+        <div class="metric-label">SKU đang có tồn khả dụng</div>
+    </div>
+    <div class="metric-card danger">
+        <div class="metric-value">@(daysOfSupply.HasValue ? $"{daysOfSupply.Value:N1} ngày" : "Chưa có")</div>
+        <div class="metric-label">Trung vị ngày cung ứng (@ViewBag.DaysOfSupplySampleCount SKU)</div>
+    </div>
+</div>
+
+<section class="enterprise-section">
+    <div class="enterprise-section__header">
+        <div>
+            <h2><i class="fas fa-boxes-stacked"></i> Ngày cung ứng và cảnh báo bổ sung theo SKU</h2>
+            <p>Tốc độ 7/30/90 ngày dùng lượng xuất ĐVT gốc. Chỉ cảnh báo khi có ít nhất 4 ngày phát sinh nhu cầu trong 90 ngày và lead time nhà cung cấp không mâu thuẫn.</p>
+        </div>
+        <div class="page-actions">
+            <span class="status-badge status-badge-danger">Cần bổ sung: @ViewBag.ReplenishmentRiskCount</span>
+            <span class="status-badge status-badge-info">Đủ điều kiện: @ViewBag.ReplenishmentEligibleCount / @ViewBag.DaysOfSupplySampleCount</span>
+            <span class="status-badge status-badge-secondary">Mẫu: @ViewBag.DaysOfSupplySampleCount SKU/chủ hàng</span>
+        </div>
+    </div>
+    @if (daysOfSupplyRows.Any())
+    {
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Mã vật tư</th><th>Tên vật tư</th><th>Chủ hàng</th><th>ĐVT gốc</th><th class="cell-right">Tồn khả dụng</th><th class="cell-right">Tốc độ 7 ngày</th><th class="cell-right">Tốc độ 30 ngày</th><th class="cell-right">Tốc độ 90 ngày</th><th class="cell-right">Ngày cung ứng 30 ngày</th><th class="cell-right">Lead time</th><th>Chất lượng dữ liệu / trạng thái</th></tr></thead>
+                <tbody>
+                @foreach (var row in daysOfSupplyRows.Take(20))
+                {
+                    <tr>
+                        <td class="td-code">@row.ItemCode</td><td>@row.ItemName</td><td>@row.OwnerPartnerName</td><td>@row.UomCode</td>
+                        <td class="td-number">@row.AvailableBaseQty.ToString("N2")</td>
+                        <td class="td-number">@row.Velocity7DayBaseQty.ToString("N2")</td>
+                        <td class="td-number">@row.Velocity30DayBaseQty.ToString("N2")</td>
+                        <td class="td-number">@row.Velocity90DayBaseQty.ToString("N2")</td>
+                        <td class="td-number fw-700">@(row.RiskDaysOfSupply.HasValue ? row.RiskDaysOfSupply.Value.ToString("N1") : "—")</td>
+                        <td class="td-number">@(row.LeadTimeDays.HasValue ? $"{row.LeadTimeDays.Value} ngày" : "—")</td>
+                        <td>
+                            <span class="status-badge @riskStatusClass(row)">@riskStatusLabel(row)</span>
+                            <div class="text-muted fs-xs mt-1">@row.DemandActiveDayCount90 ngày nhu cầu; @row.SupplierSampleCount NCC</div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state"><i class="fas fa-chart-line"></i><h3>Chưa đủ dữ liệu lượng xuất</h3><p>Không hiển thị 0 ngày giả khi kỳ lọc chưa có lượng xuất ĐVT gốc.</p></div>
+    }
+</section>
+
+<div class="metric-grid analytics-qc-grid">
+    <div class="metric-card info">
+        <div class="metric-value">@ViewBag.QcTotal</div>
+        <div class="metric-label">Tổng kiểm phẩm</div>
+    </div>
+    <div class="metric-card success">
+        <div class="metric-value">@ViewBag.QcPassed</div>
+        <div class="metric-label">Đạt</div>
+    </div>
+    <div class="metric-card danger">
+        <div class="metric-value">@ViewBag.QcFailed</div>
+        <div class="metric-label">Không đạt</div>
+    </div>
+</div>
+
+<div class="analytics-chart-data"
+     data-wms-analytics-data="true"
+     data-chart-labels="@chartLabelsJson"
+     data-inbound="@inboundJson"
+     data-outbound="@outboundJson"
+     data-lines="@linesJson"></div>
+
+<section class="enterprise-section analytics-chart-card">
+    <div class="enterprise-section__header">
+        <div>
+            <h2><i class="fas fa-chart-area"></i> Lưu lượng nhập xuất @days ngày gần nhất</h2>
+            <p>Đối chiếu số phiếu nhập và phiếu xuất đã phát sinh trong kỳ lọc.</p>
+        </div>
+        <span class="status-badge status-badge-info">Nguồn: Vouchers</span>
+    </div>
+    <canvas id="throughputChart" class="analytics-chart-canvas analytics-chart-canvas-lg" data-wms-analytics-chart="throughput"></canvas>
+</section>
+
+<section class="enterprise-section analytics-chart-card">
+    <div class="enterprise-section__header">
+        <div>
+            <h2><i class="fas fa-chart-bar"></i> Dòng hàng xử lý theo ngày</h2>
+            <p>Theo dõi khối lượng dòng vật tư để phát hiện ngày cao tải hoặc thiếu dữ liệu phát sinh.</p>
+        </div>
+        <span class="status-badge status-badge-info">Nguồn: VoucherDetails</span>
+    </div>
+    <canvas id="linesChart" class="analytics-chart-canvas analytics-chart-canvas-md" data-wms-analytics-chart="lines"></canvas>
+</section>
+
+@if (!hasThroughput)
+{
+    <section class="enterprise-section">
+        <div class="empty-state">
+            <i class="fas fa-chart-line"></i>
+            <h3>Chưa có dữ liệu vận hành trong kỳ lọc</h3>
+            <p>Hãy mở rộng khoảng thời gian hoặc chọn kho khác để xem lưu lượng nhập xuất.</p>
+            <a asp-controller="Reports" asp-action="OpsKpi" class="btn btn-secondary">
+                <i class="fas fa-gauge-high"></i> Xem chỉ số vận hành
+            </a>
+        </div>
+    </section>
+}
+
+<section class="enterprise-section">
+    <div class="enterprise-section__header">
+        <div>
+            <h2>Ghi chú nguồn số liệu</h2>
+        <p>Chỉ số tồn kho dùng số liệu tồn theo vị trí làm nguồn đối chiếu; thời gian lọc dùng ngày nghiệp vụ Việt Nam.</p>
+        </div>
+        <span class="status-badge status-badge-success">Đã kiểm soát phạm vi kho</span>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/vendor/chartjs/chart.umd.js" asp-append-version="true"></script>
+}

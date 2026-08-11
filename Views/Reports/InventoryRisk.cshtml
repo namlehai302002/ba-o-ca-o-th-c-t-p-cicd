@@ -1,0 +1,285 @@
+@model WMS.ViewModels.InventoryRiskPageViewModel
+@using WMS.Models
+@using WMS.ViewModels
+@{
+    ViewData["Title"] = "Kiểm kê thông minh";
+    var canSaveShadow = User.IsInRole(WmsRoles.Admin) || User.IsInRole(WmsRoles.Manager);
+    var highRiskCount = Model.Rows.Count(row => row.Severity is InventoryRiskSeverityEnum.Critical or InventoryRiskSeverityEnum.High);
+}
+
+<div class="page-header inventory-risk-header">
+    <div>
+        <div class="inventory-risk-title-line">
+            <h1 class="page-title">Kiểm kê thông minh</h1>
+            <span class="inventory-risk-mode" data-testid="risk-mode">THỬ NGHIỆM</span>
+        </div>
+        <p class="page-subtitle">Xếp hạng phạm vi cần kiểm kê theo dữ liệu tồn, biến động và lịch sử kiểm đếm tại cùng thời điểm chốt.</p>
+    </div>
+    <div class="page-actions">
+        @if (canSaveShadow)
+        {
+            <a class="btn btn-secondary" asp-action="InventoryRiskRecommendations" title="Mở danh sách cần quản lý xem xét">
+                <i class="fas fa-list-check"></i> Đề xuất kiểm kê
+            </a>
+        }
+        @if (canSaveShadow)
+        {
+            <form asp-action="InventoryRiskShadowRefresh" method="post" class="inventory-risk-shadow-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                <input type="hidden" name="ownerPartnerId" value="@Model.OwnerPartnerId" />
+                <input type="hidden" name="zoneId" value="@Model.ZoneId" />
+                <input type="hidden" name="search" value="@Model.Search" />
+                <button class="btn btn-secondary" type="submit" disabled="@(!Model.PersistenceAvailable)" title="@(Model.PersistenceAvailable ? "Lưu bản chụp và kết quả chấm điểm, không tạo phiếu" : "Chưa áp dụng migration lưu lịch sử AI-2")">
+                    <i class="fas fa-camera"></i> Lưu kết quả thử nghiệm
+                </button>
+            </form>
+        }
+        <a class="btn btn-primary" asp-action="StockCount"><i class="fas fa-clipboard-check"></i> Mở kiểm kê</a>
+    </div>
+</div>
+
+<div class="inventory-risk-contract" role="status" data-testid="risk-contract">
+    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+    <div>
+        <strong>Điểm ưu tiên theo quy tắc @Model.RuleVersion</strong>
+        <span>Đây không phải xác suất. Chế độ thử nghiệm không tạo phiếu, không điều chỉnh và không làm thay đổi tồn kho.</span>
+    </div>
+    <div class="inventory-risk-cutoff">
+        <span>Chốt dữ liệu</span>
+        <strong>@Model.PredictionCutoff.ToString("dd/MM/yyyy HH:mm")</strong>
+    </div>
+</div>
+
+<form method="get" class="filter-panel inventory-risk-filters" data-testid="risk-filters">
+    <div class="filter-field inventory-risk-search">
+        <label for="risk-search">Tìm kiếm</label>
+        <input id="risk-search" class="form-control" name="search" value="@Model.Search" placeholder="Mã, tên vật tư, vị trí hoặc lô" />
+    </div>
+    <div class="filter-field">
+        <label for="risk-warehouse">Kho</label>
+        <select id="risk-warehouse" class="form-control" name="warehouseId">
+            <option value="">Tất cả kho được phép</option>
+            @foreach (var warehouse in Model.Warehouses)
+            {
+                <option value="@warehouse.WarehouseId" selected="@(Model.WarehouseId == warehouse.WarehouseId)">@warehouse.WarehouseCode - @warehouse.WarehouseName</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="risk-owner">Chủ hàng</label>
+        <select id="risk-owner" class="form-control" name="ownerPartnerId">
+            <option value="">Tất cả phạm vi được phép</option>
+            @foreach (var owner in Model.Owners)
+            {
+                <option value="@owner.PartnerId" selected="@(Model.OwnerPartnerId == owner.PartnerId)">@owner.PartnerCode - @owner.PartnerName</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="risk-zone">Khu vực</label>
+        <select id="risk-zone" class="form-control" name="zoneId">
+            <option value="">Tất cả khu vực</option>
+            @foreach (var zone in Model.Zones)
+            {
+                <option value="@zone.ZoneId" selected="@(Model.ZoneId == zone.ZoneId)">@zone.Label</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="risk-severity">Mức ưu tiên</label>
+        <select id="risk-severity" class="form-control" name="severity">
+            <option value="">Tất cả mức</option>
+            @foreach (var value in Enum.GetValues<InventoryRiskSeverityEnum>())
+            {
+                <option value="@value" selected="@(Model.Severity == value)">@InventoryRiskUiLabels.Severity(value)</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field">
+        <label for="risk-dq">Chất lượng dữ liệu</label>
+        <select id="risk-dq" class="form-control" name="dataQualityStatus">
+            <option value="">Tất cả trạng thái</option>
+            @foreach (var value in Enum.GetValues<InventoryRiskDataQualityStatusEnum>())
+            {
+                <option value="@value" selected="@(Model.DataQualityStatus == value)">@InventoryRiskUiLabels.DataQuality(value)</option>
+            }
+        </select>
+    </div>
+    <div class="filter-field inventory-risk-page-size">
+        <label for="risk-page-size">Số dòng</label>
+        <select id="risk-page-size" class="form-control" name="pageSize">
+            @foreach (var size in new[] { 10, 25, 50, 100 })
+            {
+                <option value="@size" selected="@(Model.PageSize == size)">@size</option>
+            }
+        </select>
+    </div>
+    <button class="btn btn-primary inventory-risk-filter-button" type="submit"><i class="fas fa-filter"></i> Áp dụng</button>
+</form>
+
+<div class="metric-grid inventory-risk-metrics" data-testid="risk-metrics">
+    <div class="metric-card">
+        <div class="metric-icon"><i class="fas fa-layer-group"></i></div>
+        <div><div class="metric-value">@Model.TotalCount</div><div class="metric-label">PHẠM VI PHÙ HỢP BỘ LỌC</div></div>
+    </div>
+    <div class="metric-card success">
+        <div class="metric-icon"><i class="fas fa-chart-pie"></i></div>
+        <div><div class="metric-value">@Model.CoveragePercent.ToString("N1")%</div><div class="metric-label">PHẠM VI CHẤM ĐƯỢC ĐIỂM</div></div>
+    </div>
+    <div class="metric-card warning">
+        <div class="metric-icon"><i class="fas fa-arrow-up-right-dots"></i></div>
+        <div><div class="metric-value">@highRiskCount</div><div class="metric-label">MỨC CAO TRÊN TRANG</div></div>
+    </div>
+    <div class="metric-card danger">
+        <div class="metric-icon"><i class="fas fa-database"></i></div>
+        <div><div class="metric-value">@Model.BlockedCount</div><div class="metric-label">CHƯA THỂ CHẤM ĐIỂM</div></div>
+    </div>
+    <div class="metric-card info">
+        <div class="metric-icon"><i class="fas fa-clock"></i></div>
+        <div><div class="metric-value inventory-risk-freshness">@Model.FreshUntil.ToString("dd/MM HH:mm")</div><div class="metric-label">KẾT QUẢ CÓ HIỆU LỰC ĐẾN</div></div>
+    </div>
+</div>
+
+<section class="enterprise-section inventory-risk-results" data-testid="risk-results">
+    <div class="inventory-risk-section-heading">
+        <div>
+            <h2>Xếp hạng phạm vi kiểm kê</h2>
+            <p>@Model.RuleVersion · @Model.FeatureSchemaVersion · @Model.ScoredCount chấm được điểm · @Model.PartialCount cần bổ sung dữ liệu</p>
+        </div>
+        <span class="status-badge @(Model.PersistenceAvailable ? "badge-success" : "badge-warning")">
+            @(Model.PersistenceAvailable ? "Có lưu lịch sử thử nghiệm" : "Chỉ tính tức thời")
+        </span>
+    </div>
+    <div class="table-responsive inventory-risk-table-wrap" role="region" aria-label="Bảng xếp hạng phạm vi kiểm kê" tabindex="0">
+        <table class="data-table inventory-risk-table">
+            <caption class="visually-hidden">Danh sách phạm vi tồn kho được xếp hạng để quản lý xem xét kiểm kê</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Vật tư</th>
+                    <th scope="col">Phạm vi</th>
+                    <th scope="col" class="td-number">Tồn / khả dụng</th>
+                    <th scope="col">Điểm ưu tiên</th>
+                    <th scope="col">Lý do chính</th>
+                    <th scope="col">Lần kiểm kê gần nhất</th>
+                    <th scope="col">Chất lượng dữ liệu</th>
+                    <th scope="col" class="inventory-risk-actions-column">Đối chiếu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr class="inventory-risk-empty-row"><td colspan="8" class="empty-state">Không có phạm vi tồn kho phù hợp với điều kiện đã chọn.</td></tr>
+                }
+                @foreach (var row in Model.Rows)
+                {
+                    <tr data-testid="risk-row" data-risk-score="@(row.RiskScore?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "blocked")">
+                        <td data-label="Vật tư">
+                            <strong class="inventory-risk-code">@row.ItemCode</strong>
+                            <div>@row.ItemName</div>
+                            <span class="text-muted">ABC: @row.AbcClass</span>
+                        </td>
+                        <td data-label="Phạm vi">
+                            <strong>@row.WarehouseCode / @row.ZoneCode / @row.LocationCode</strong>
+                            <div class="text-muted">@row.OwnerName</div>
+                            <div class="inventory-risk-lot">
+                                <span>Lô: @(string.IsNullOrWhiteSpace(row.LotNumber) ? "Không quản lý" : row.LotNumber)</span>
+                                <span>HSD: @(row.ExpiryDate.HasValue ? row.ExpiryDate.Value.ToString("dd/MM/yyyy") : "Không quản lý")</span>
+                            </div>
+                        </td>
+                        <td class="td-number inventory-risk-quantity" data-label="Tồn / khả dụng">
+                            <strong>@row.OnHandQty.ToString("N4")</strong>
+                            <span>@row.AvailableQty.ToString("N4") khả dụng</span>
+                            @if (row.ReservedQty != 0)
+                            {
+                                <span>@row.ReservedQty.ToString("N4") giữ chỗ</span>
+                            }
+                        </td>
+                        <td data-label="Điểm ưu tiên">
+                            @if (row.RiskScore.HasValue)
+                            {
+                                <div class="inventory-risk-score">@row.RiskScore.Value.ToString("N1")<small>/100</small></div>
+                                <span class="status-badge @InventoryRiskUiLabels.SeverityClass(row.Severity)">@InventoryRiskUiLabels.Severity(row.Severity)</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge badge-danger">Chưa chấm điểm</span>
+                            }
+                        </td>
+                        <td class="inventory-risk-reasons" data-label="Lý do chính">
+                            @if (row.Reasons.Count == 0)
+                            {
+                                <span class="text-muted">Cần xử lý dữ liệu trước</span>
+                            }
+                            else
+                            {
+                                <strong>@row.Reasons[0].Label</strong>
+                                <div class="text-muted">@row.Reasons[0].Evidence</div>
+                                @if (row.Reasons.Count > 1)
+                                {
+                                    <details>
+                                        <summary>@(row.Reasons.Count - 1) lý do khác</summary>
+                                        <ul>
+                                            @foreach (var reason in row.Reasons.Skip(1))
+                                            {
+                                                <li><strong>@reason.Label</strong>: @reason.Evidence</li>
+                                            }
+                                        </ul>
+                                    </details>
+                                }
+                            }
+                        </td>
+                        <td data-label="Lần kiểm kê gần nhất">
+                            @if (row.LastApprovedCountAt.HasValue)
+                            {
+                                <strong>@row.LastApprovedCountAt.Value.ToString("dd/MM/yyyy HH:mm")</strong>
+                                <div class="text-muted">@row.DaysSinceLastApprovedCount ngày trước</div>
+                            }
+                            else
+                            {
+                                <span>Chưa có lần duyệt</span>
+                            }
+                        </td>
+                        <td data-label="Chất lượng dữ liệu">
+                            <span class="status-badge @InventoryRiskUiLabels.DataQualityClass(row.DataQualityStatus)">@InventoryRiskUiLabels.DataQuality(row.DataQualityStatus)</span>
+                            @if (row.DataQualityCodes.Count > 0)
+                            {
+                                <details class="inventory-risk-dq-details">
+                                    <summary>@row.DataQualityCodes.Count cảnh báo nguồn</summary>
+                                    <ul>
+                                        @foreach (var code in row.DataQualityCodes)
+                                        {
+                                            <li>@InventoryRiskUiLabels.DataQualityDetail(code)</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                        </td>
+                        <td class="inventory-risk-actions-column" data-label="Đối chiếu">
+                            <a class="btn btn-sm btn-secondary" asp-action="InventoryTransactions"
+                               asp-route-itemId="@row.ItemId" asp-route-warehouseId="@row.WarehouseId" asp-route-locationId="@row.LocationId"
+                               asp-route-dateFrom="@Model.PredictionCutoff.AddDays(-90).ToString("yyyy-MM-dd")" asp-route-dateTo="@Model.PredictionCutoff.ToString("yyyy-MM-dd")"
+                               title="Mở sổ giao dịch"><i class="fas fa-list"></i> Sổ giao dịch</a>
+                            <a class="btn btn-sm btn-secondary" asp-action="StockCount" asp-route-warehouseId="@row.WarehouseId" title="Mở lịch sử kiểm kê"><i class="fas fa-clipboard-check"></i> Kiểm kê</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="inventory-risk-pagination" aria-label="Phân trang kiểm kê thông minh">
+            <a class="btn btn-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-action="InventoryRisk"
+               asp-route-warehouseId="@Model.WarehouseId" asp-route-ownerPartnerId="@Model.OwnerPartnerId" asp-route-zoneId="@Model.ZoneId"
+               asp-route-severity="@Model.Severity" asp-route-dataQualityStatus="@Model.DataQualityStatus" asp-route-search="@Model.Search"
+               asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize">Trước</a>
+            <span>Trang <strong>@Model.Page</strong> / @Model.TotalPages</span>
+            <a class="btn btn-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-action="InventoryRisk"
+               asp-route-warehouseId="@Model.WarehouseId" asp-route-ownerPartnerId="@Model.OwnerPartnerId" asp-route-zoneId="@Model.ZoneId"
+               asp-route-severity="@Model.Severity" asp-route-dataQualityStatus="@Model.DataQualityStatus" asp-route-search="@Model.Search"
+               asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Sau</a>
+        </nav>
+    }
+</section>
